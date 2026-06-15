@@ -27,8 +27,8 @@ export default function NetWorthTimeline({ snapshots }: Props) {
         <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#00E5A0" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#00E5A0" stopOpacity={0} />
+              <stop offset="5%" stopColor="#818CF8" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="#818CF8" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
@@ -38,7 +38,7 @@ export default function NetWorthTimeline({ snapshots }: Props) {
             formatter={(v) => [formatILS(Number(v)), 'שווי נקי']}
             contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
           />
-          <Area type="monotone" dataKey="netWorth" stroke="#00E5A0" strokeWidth={2} fill="url(#nwGrad)" dot={false} />
+          <Area type="monotone" dataKey="netWorth" stroke="#818CF8" strokeWidth={2} fill="url(#nwGrad)" dot={false} />
         </AreaChart>
       </ResponsiveContainer>
     </Card>

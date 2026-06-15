@@ -73,7 +73,7 @@ export default function SimulatorsPage() {
               contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
             <ReferenceLine y={1000000} stroke="rgba(245,166,35,0.4)" strokeDasharray="4 4" label={{ value: '₪1M', fill: '#F5A623', fontSize: 11 }} />
-            <Line type="monotone" dataKey="value" stroke="#00E5A0" strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="value" stroke="#818CF8" strokeWidth={2.5} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </Card>
@@ -99,12 +99,12 @@ export default function SimulatorsPage() {
               contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
             <Line type="monotone" dataKey="דירה" stroke="#FB923C" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="בורסה" stroke="#00E5A0" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="בורסה" stroke="#818CF8" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
         <div className="flex gap-4 mt-2 text-xs" style={{ color: 'var(--muted)' }}>
           <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#FB923C] inline-block" />דירה (כולל שכ"ד ועליית ערך)</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#00E5A0] inline-block" />בורסה ({returnRate}% שנתי)</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#818CF8] inline-block" />בורסה ({returnRate}% שנתי)</span>
         </div>
         <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>* הדירה כוללת 5% עלויות רכישה. לא כולל ריבית משכנתא, תחזוקה, ומס שבח. השוואה גסה בלבד.</p>
       </Card>

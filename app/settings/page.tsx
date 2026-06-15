@@ -97,7 +97,7 @@ export default function SettingsPage() {
         <div className="flex gap-3 flex-wrap">
           <button onClick={() => exportData(data)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-            style={{ background: 'var(--primary-dim)', color: 'var(--primary)', border: '1px solid rgba(0,229,160,0.2)' }}>
+            style={{ background: 'var(--primary-dim)', color: 'var(--primary)', border: '1px solid rgba(129,140,248,0.2)' }}>
             <Download size={15} /> ייצא JSON
           </button>
           <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all hover:opacity-80"

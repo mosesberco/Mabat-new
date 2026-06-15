@@ -19,14 +19,14 @@ export default function NetWorthHero({ portfolio, snapshots, pricesLoading }: Pr
   const positive = change >= 0
 
   return (
-    <div className="glass p-8 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #111118, #13191f)' }}>
+    <div className="glass p-6 md:p-8 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #10101A, #14142A)' }}>
       <div className="absolute inset-0 opacity-20" style={{
-        background: 'radial-gradient(ellipse 60% 80% at 80% 50%, rgba(0,229,160,0.2) 0%, transparent 60%)'
+        background: 'radial-gradient(ellipse 60% 80% at 80% 50%, rgba(129,140,248,0.2) 0%, transparent 60%)'
       }} />
       <div className="relative">
         <div className="text-sm font-medium mb-1" style={{ color: 'var(--muted)' }}>שווי נקי כולל</div>
         <div className="flex items-end gap-4 flex-wrap">
-          <div className="text-5xl font-black tracking-tight num" style={{ color: 'var(--primary)' }}>
+          <div className="text-4xl md:text-5xl font-black tracking-tight num" style={{ color: 'var(--primary)' }}>
             {pricesLoading
               ? <span className="opacity-50">מחשב...</span>
               : <AnimatedNumber
@@ -45,7 +45,7 @@ export default function NetWorthHero({ portfolio, snapshots, pricesLoading }: Pr
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-3 gap-3 md:gap-4 mt-5 md:mt-6">
           {[
             { label: 'סך נכסים', value: portfolio.totalAssets, color: 'var(--primary)' },
             { label: 'סך חובות', value: portfolio.totalLiabilities, color: 'var(--danger)' },
