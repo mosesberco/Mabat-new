@@ -46,7 +46,7 @@ export default function LiabilitiesPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {portfolio.liabilities.map(l => (
           <LoanCard key={l.id} liability={l} onDelete={deleteLiability} />
         ))}
