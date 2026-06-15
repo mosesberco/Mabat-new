@@ -26,7 +26,7 @@ export default function FireProgress({ portfolio, monthlyExpenses }: Props) {
       <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--surface2)' }}>
         <div
           className="h-3 rounded-full transition-all duration-1000"
-          style={{ width: `${Math.min(pct, 100)}%`, background: `linear-gradient(90deg, ${color}, rgba(0,229,160,0.7))` }}
+          style={{ width: `${Math.min(pct, 100)}%`, background: `linear-gradient(90deg, ${color}, rgba(129,140,248,0.5))` }}
         />
       </div>
       <div className="mt-3 text-xs" style={{ color: 'var(--muted)' }}>

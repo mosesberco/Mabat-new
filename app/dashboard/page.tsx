@@ -24,7 +24,7 @@ export default function DashboardPage() {
     <div className="space-y-5 fade-up">
       <NetWorthHero portfolio={portfolio} snapshots={data.snapshots} pricesLoading={pricesLoading} />
 
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
         <AllocationRing portfolio={portfolio} />
         <CashFlowWaterfall portfolio={portfolio} />
         <HealthScoreGauge portfolio={portfolio} data={data} />
@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
       <NetWorthTimeline snapshots={data.snapshots} />
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
         <FireProgress portfolio={portfolio} monthlyExpenses={data.profile.monthlyExpenses} />
         <EmergencyFund portfolio={portfolio} target={data.profile.monthlyCushionTarget} />
       </div>

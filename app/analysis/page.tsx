@@ -65,7 +65,7 @@ export default function AnalysisPage() {
     insights.push({ type: 'warn', text: `שיעור חיסכון נמוך: ${portfolio.savingsRate.toFixed(0)}% — יעד מומלץ: לפחות 20%` })
   }
 
-  const COLORS_SECTOR = ['#00E5A0', '#F5A623', '#4DB8FF', '#A78BFA', '#FF6B6B', '#FB923C']
+  const COLORS_SECTOR = ['#818CF8', '#F5A623', '#4DB8FF', '#A78BFA', '#FF6B6B', '#FB923C']
 
   return (
     <div className="space-y-5 fade-up">
@@ -82,7 +82,7 @@ export default function AnalysisPage() {
           </Card>
         )}
         {insights.map((ins, i) => (
-          <Card key={i} className={ins.type === 'warn' ? 'border-[rgba(255,107,107,0.25)]' : ins.type === 'ok' ? 'border-[rgba(0,229,160,0.25)]' : 'border-[rgba(77,184,255,0.25)]'}>
+          <Card key={i} className={ins.type === 'warn' ? 'border-[rgba(255,107,107,0.25)]' : ins.type === 'ok' ? 'border-[rgba(129,140,248,0.25)]' : 'border-[rgba(77,184,255,0.25)]'}>
             <div className="flex gap-3 items-start">
               {ins.type === 'warn' && <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--danger)' }} />}
               {ins.type === 'ok' && <CheckCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />}
@@ -93,7 +93,7 @@ export default function AnalysisPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
         {/* Health Score Breakdown */}
         <Card>
           <div className="flex items-center justify-between mb-4">
@@ -142,7 +142,7 @@ export default function AnalysisPage() {
       {/* Tax & P&L summary */}
       <Card>
         <div className="font-semibold text-sm mb-4" style={{ color: 'var(--muted)' }}>רווח/הפסד לא ממומש</div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           {[
             { label: 'רווחים לא ממומשים', value: portfolio.holdings.reduce((s, h) => s + (h.gain && h.gain > 0 ? h.gain : 0), 0), color: 'var(--primary)' },
             { label: 'הפסדים לא ממומשים', value: portfolio.holdings.reduce((s, h) => s + (h.gain && h.gain < 0 ? Math.abs(h.gain) : 0), 0), color: 'var(--danger)' },
