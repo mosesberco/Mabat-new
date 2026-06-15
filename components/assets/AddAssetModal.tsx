@@ -100,36 +100,34 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
     >
       <div
         className="glass w-full flex flex-col md:flex-row"
-        style={{ maxWidth: 700, maxHeight: '90vh', borderRadius: 20 }}
+        style={{ maxWidth: 720, maxHeight: '90vh', borderRadius: 20, overflow: 'hidden' }}
       >
-        {/* Left panel — type selector */}
+        {/* Type selector — compact chips on mobile, sidebar on desktop */}
         <div
-          className="md:w-48 flex-shrink-0 p-5 overflow-y-auto"
+          className="flex-shrink-0 p-4 md:p-5 md:w-56 md:overflow-y-auto md:max-h-none max-h-[38vh] overflow-y-auto"
           style={{
-            borderBottom: 'none',
-            borderLeft: '1px solid var(--border)',
+            borderBottom: '1px solid var(--border)',
             background: 'var(--surface2)',
-            borderRadius: '20px 0 0 20px',
           }}
         >
-          <div className="text-xs font-bold mb-4" style={{ color: 'var(--muted)' }}>סוג נכס</div>
-          <div className="space-y-4">
+          <div className="text-xs font-bold mb-3 md:mb-4" style={{ color: 'var(--muted)' }}>סוג נכס</div>
+          <div className="space-y-3 md:space-y-4">
             {CATEGORIES.map(cat => (
               <div key={cat.label}>
-                <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted2)' }}>
+                <div className="text-[10px] font-bold uppercase tracking-wider mb-1.5 md:mb-2" style={{ color: 'var(--muted2)' }}>
                   {cat.label}
                 </div>
-                <div className="space-y-1">
+                <div className="flex flex-wrap gap-1.5">
                   {cat.types.map(t => (
                     <button
                       key={t.value}
                       type="button"
                       onClick={() => setType(t.value)}
-                      className="w-full text-right px-3 py-2 rounded-xl text-sm transition-all"
+                      className="px-3 py-1.5 rounded-xl text-xs md:text-sm transition-all md:w-full md:text-right"
                       style={{
-                        background: type === t.value ? 'var(--primary-dim)' : 'transparent',
+                        background: type === t.value ? 'var(--primary-dim)' : 'var(--surface)',
                         color: type === t.value ? 'var(--primary)' : 'var(--muted)',
-                        border: type === t.value ? '1px solid rgba(129,140,248,0.25)' : '1px solid transparent',
+                        border: type === t.value ? '1px solid rgba(129,140,248,0.25)' : '1px solid var(--border)',
                         fontWeight: type === t.value ? 600 : 400,
                       }}
                     >
@@ -143,7 +141,7 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
         </div>
 
         {/* Right panel — form */}
-        <div className="flex-1 flex flex-col min-w-0" style={{ borderRadius: '0 20px 20px 0' }}>
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <div className="flex items-center justify-between p-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
             <h2 className="text-lg font-bold">הוספת נכס</h2>
