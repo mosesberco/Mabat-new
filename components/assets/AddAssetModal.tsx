@@ -94,17 +94,17 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
       style={{ background: 'rgba(0,0,0,0.75)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className="glass w-full flex flex-col md:flex-row"
-        style={{ maxWidth: 720, maxHeight: '90vh', borderRadius: 20, overflow: 'hidden' }}
+        className="glass w-full flex flex-col md:flex-row rounded-t-[20px] md:rounded-[20px]"
+        style={{ maxWidth: 720, maxHeight: '92vh', overflow: 'hidden' }}
       >
         {/* Type selector — compact chips on mobile, sidebar on desktop */}
         <div
-          className="flex-shrink-0 p-4 md:p-5 md:w-56 md:overflow-y-auto md:max-h-none max-h-[38vh] overflow-y-auto"
+          className="flex-shrink-0 p-4 md:p-5 md:w-56 md:overflow-y-auto md:max-h-none max-h-[32vh] overflow-y-auto"
           style={{
             borderBottom: '1px solid var(--border)',
             background: 'var(--surface2)',
@@ -141,7 +141,7 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
         </div>
 
         {/* Right panel — form */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* Header */}
           <div className="flex items-center justify-between p-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
             <h2 className="text-lg font-bold">הוספת נכס</h2>
