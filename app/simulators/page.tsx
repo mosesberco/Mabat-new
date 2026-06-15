@@ -7,7 +7,6 @@ import Card from '@/components/shared/Card'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts'
 import { Target } from 'lucide-react'
 
-// Monthly mortgage payment (standard amortization)
 function calcMonthlyPayment(principal: number, annualRate: number, termMonths: number): number {
   if (principal <= 0 || termMonths <= 0) return 0
   if (annualRate === 0) return principal / termMonths
@@ -15,26 +14,21 @@ function calcMonthlyPayment(principal: number, annualRate: number, termMonths: n
   return principal * (r * Math.pow(1 + r, termMonths)) / (Math.pow(1 + r, termMonths) - 1)
 }
 
-// Remaining mortgage balance after k months
 function mortgageBalance(principal: number, annualRate: number, termMonths: number, kMonths: number): number {
   if (principal <= 0 || termMonths <= 0) return 0
   if (annualRate === 0) return Math.max(0, principal * (1 - kMonths / termMonths))
   const r = annualRate / 12
   const p = calcMonthlyPayment(principal, annualRate, termMonths)
-  const balance = principal * Math.pow(1 + r, kMonths) - p * (Math.pow(1 + r, kMonths) - 1) / r
-  return Math.max(0, balance)
+  return Math.max(0, principal * Math.pow(1 + r, kMonths) - p * (Math.pow(1 + r, kMonths) - 1) / r)
 }
 
 export default function SimulatorsPage() {
   const { data, portfolio, loading } = usePortfolio()
 
-  // --- Millionaire simulator state ---
   const [savingsBoost, setSavingsBoost] = useState(0)
   const [returnRate, setReturnRate] = useState(7)
   const [useCustomTarget, setUseCustomTarget] = useState(false)
   const [customTarget, setCustomTarget] = useState(2000000)
-
-  // --- Apartment vs market state ---
   const [downPayment, setDownPayment] = useState(500000)
   const [mortgage, setMortgage] = useState(1000000)
   const [mortgageRate, setMortgageRate] = useState(5)
@@ -43,18 +37,9 @@ export default function SimulatorsPage() {
   const [aptAppreciation, setAptAppreciation] = useState(3)
   const [period, setPeriod] = useState(15)
 
-  if (loading || !portfolio) {
-    return <div className="flex items-center justify-center h-64 text-[var(--muted)]">טוען...</div>
-  }
-
-  const fireNumber = computeFIRE(portfolio, data.profile.monthlyExpenses).fireNumber
-  const milTarget = useCustomTarget ? customTarget : 1_000_000
-  const adjustedSavings = portfolio.monthlySavings + savingsBoost
-  const milPath = computeMillionairePath(portfolio.netWorth, adjustedSavings, milTarget, returnRate / 100)
-  const milYears = milPath.find(p => p.value >= milTarget)?.year ?? null
-
+  // ALL derived values and useMemo must be before any early return
   const aptPrice = downPayment + mortgage
-  const monthlyPayment = calcMonthlyPayment(mortgage, mortgageRate / 100, mortgageTerm * 12)
+  const monthlyPmt = calcMonthlyPayment(mortgage, mortgageRate / 100, mortgageTerm * 12)
   const buyingCosts = aptPrice * 0.05
 
   const aptData = useMemo(() => {
@@ -62,21 +47,28 @@ export default function SimulatorsPage() {
       const aptValue = aptPrice * Math.pow(1 + aptAppreciation / 100, y)
       const remMortgage = mortgageBalance(mortgage, mortgageRate / 100, mortgageTerm * 12, y * 12)
       const propertyEquity = aptValue - remMortgage
-      const netCashFlow = (aptRent - monthlyPayment) * 12 * y
+      const netCashFlow = (aptRent - monthlyPmt) * 12 * y
       const aptWealth = propertyEquity + netCashFlow - buyingCosts
-
       const stockWealth = downPayment * Math.pow(1 + returnRate / 100, y)
-
-      return {
-        year: y,
-        'דירה': Math.round(aptWealth / 1000),
-        'בורסה': Math.round(stockWealth / 1000),
-      }
+      return { year: y, 'דירה': Math.round(aptWealth / 1000), 'בורסה': Math.round(stockWealth / 1000) }
     })
-  }, [downPayment, mortgage, mortgageRate, mortgageTerm, aptRent, aptAppreciation, period, returnRate, aptPrice, monthlyPayment, buyingCosts])
+  }, [downPayment, mortgage, mortgageRate, mortgageTerm, aptRent, aptAppreciation, period, returnRate, aptPrice, monthlyPmt, buyingCosts])
+
+  if (loading || !portfolio) {
+    return <div className="flex items-center justify-center h-64 text-[var(--muted)]">טוען...</div>
+  }
+
+  const fireNumber = computeFIRE(portfolio, data.profile.monthlyExpenses).fireNumber
+  const fireTarget = Math.round(fireNumber / 100000) * 100000
+  const milTarget = useCustomTarget ? customTarget : 1_000_000
+  const adjustedSavings = portfolio.monthlySavings + savingsBoost
+  const milPath = computeMillionairePath(portfolio.netWorth, adjustedSavings, milTarget, returnRate / 100)
+  const milYears = milPath.find(p => p.value >= milTarget)?.year ?? null
 
   const lastYear = aptData[aptData.length - 1]
-  const aptWins = lastYear['דירה'] > lastYear['בורסה']
+  const aptWins = (lastYear?.['דירה'] ?? 0) > (lastYear?.['בורסה'] ?? 0)
+
+  const TARGETS = [1_000_000, 2_000_000, 5_000_000]
 
   return (
     <div className="space-y-5 fade-up">
@@ -85,7 +77,7 @@ export default function SimulatorsPage() {
         <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>כלי "מה אם" לתכנון עתידי</p>
       </div>
 
-      {/* === Millionaire Timeline === */}
+      {/* === Millionaire / FIRE Timeline === */}
       <Card>
         <div className="flex items-start justify-between mb-1">
           <div>
@@ -93,7 +85,7 @@ export default function SimulatorsPage() {
             <div className="text-sm" style={{ color: 'var(--muted)' }}>
               {milYears !== null
                 ? `תגיע ל-${formatILS(milTarget, true)} בעוד ${milYears} שנים (${new Date().getFullYear() + milYears})`
-                : `לא יגיע ליעד — הגדל חיסכון`}
+                : 'לא יגיע ליעד — הגדל חיסכון'}
             </div>
           </div>
           <div className="text-3xl font-black num" style={{ color: 'var(--primary)' }}>
@@ -103,9 +95,9 @@ export default function SimulatorsPage() {
 
         {/* Target selector */}
         <div className="flex gap-2 flex-wrap mb-5 mt-3">
-          {[1_000_000, 2_000_000, 5_000_000].map(t => (
+          {TARGETS.map(t => (
             <button key={t}
-              onClick={() => { setUseCustomTarget(false); setCustomTarget(t); }}
+              onClick={() => { setUseCustomTarget(false); setCustomTarget(t) }}
               className="px-3 py-1 rounded-full text-xs font-bold transition-all"
               style={{
                 background: !useCustomTarget && customTarget === t ? 'var(--primary)' : 'var(--surface2)',
@@ -117,6 +109,17 @@ export default function SimulatorsPage() {
             </button>
           ))}
           <button
+            onClick={() => { setUseCustomTarget(false); setCustomTarget(fireTarget) }}
+            className="px-3 py-1 rounded-full text-xs font-bold transition-all"
+            style={{
+              background: !useCustomTarget && customTarget === fireTarget ? 'var(--gold)' : 'var(--surface2)',
+              color: !useCustomTarget && customTarget === fireTarget ? '#0A0A0F' : 'var(--muted)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            FIRE ({formatILS(fireNumber, true)})
+          </button>
+          <button
             onClick={() => setUseCustomTarget(true)}
             className="px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition-all"
             style={{
@@ -125,33 +128,13 @@ export default function SimulatorsPage() {
               border: '1px solid var(--border)',
             }}
           >
-            <Target size={11} /> מטרה אחרת
-          </button>
-          <button
-            onClick={() => { setUseCustomTarget(false); setCustomTarget(Math.round(fireNumber / 100000) * 100000) }}
-            className="px-3 py-1 rounded-full text-xs font-bold transition-all"
-            style={{
-              background: !useCustomTarget && customTarget === Math.round(fireNumber / 100000) * 100000 ? 'var(--gold)' : 'var(--surface2)',
-              color: !useCustomTarget && customTarget === Math.round(fireNumber / 100000) * 100000 ? '#0A0A0F' : 'var(--muted)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            FIRE ({formatILS(fireNumber, true)})
+            <Target size={11} /> מותאם
           </button>
         </div>
 
         {useCustomTarget && (
           <div className="mb-4">
-            <SliderFull
-              label="יעד מותאם אישית"
-              value={customTarget}
-              onChange={setCustomTarget}
-              min={500000}
-              max={10_000_000}
-              step={100000}
-              format={v => formatILS(v, true)}
-              color="primary"
-            />
+            <SliderFull label="יעד מותאם" value={customTarget} onChange={setCustomTarget} min={500000} max={10_000_000} step={100000} format={v => formatILS(v, true)} color="primary" />
           </div>
         )}
 
@@ -169,7 +152,8 @@ export default function SimulatorsPage() {
               formatter={(v) => [formatILS(Number(v)), 'שווי נקי']}
               contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
-            <ReferenceLine y={milTarget} stroke="rgba(245,166,35,0.45)" strokeDasharray="5 4" label={{ value: formatILS(milTarget, true), fill: '#F5A623', fontSize: 11, position: 'insideTopRight' }} />
+            <ReferenceLine y={milTarget} stroke="rgba(245,166,35,0.45)" strokeDasharray="5 4"
+              label={{ value: formatILS(milTarget, true), fill: '#F5A623', fontSize: 11, position: 'insideTopRight' }} />
             <Line type="monotone" dataKey="value" stroke="#818CF8" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: '#818CF8' }} />
           </LineChart>
         </ResponsiveContainer>
@@ -179,7 +163,7 @@ export default function SimulatorsPage() {
       <Card>
         <div className="font-bold text-lg mb-1">דירה מול בורסה</div>
         <p className="text-sm mb-5" style={{ color: 'var(--muted)' }}>
-          השוואת הון עצמי: {formatILS(downPayment, true)} + משכנתא {formatILS(mortgage, true)} | תקופה: {period} שנ'
+          הון עצמי {formatILS(downPayment, true)} + משכנתא {formatILS(mortgage, true)} | {period} שנ'
         </p>
 
         <div className="space-y-4 mb-5">
@@ -194,7 +178,7 @@ export default function SimulatorsPage() {
           <SliderFull label="תקופת השוואה" value={period} onChange={setPeriod} min={5} max={30} step={1} format={v => `${v} שנ'`} color="gold" />
         </div>
 
-        {/* Summary row */}
+        {/* Summary */}
         <div className="grid grid-cols-3 gap-3 mb-5 p-3 rounded-xl" style={{ background: 'var(--surface2)' }}>
           <div>
             <div className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>מחיר דירה</div>
@@ -202,11 +186,13 @@ export default function SimulatorsPage() {
           </div>
           <div>
             <div className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>החזר חודשי</div>
-            <div className="font-bold num text-sm" style={{ color: 'var(--danger)' }}>{formatILS(Math.round(monthlyPayment), true)}</div>
+            <div className="font-bold num text-sm" style={{ color: 'var(--danger)' }}>{formatILS(Math.round(monthlyPmt), true)}</div>
           </div>
           <div>
-            <div className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>בורסה ({returnRate}%)</div>
-            <div className="font-bold num text-sm" style={{ color: aptWins ? 'var(--muted)' : 'var(--primary)' }}>{formatILS((lastYear['בורסה'] ?? 0) * 1000, true)}</div>
+            <div className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>דירה {period}שנ'</div>
+            <div className="font-bold num text-sm" style={{ color: aptWins ? 'var(--primary)' : 'var(--muted)' }}>
+              {formatILS((lastYear?.['דירה'] ?? 0) * 1000, true)}
+            </div>
           </div>
         </div>
 
@@ -216,7 +202,7 @@ export default function SimulatorsPage() {
             <XAxis dataKey="year" tick={{ fill: '#5B6470', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}שנ'`} interval="preserveStartEnd" />
             <YAxis tick={{ fill: '#5B6470', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `₪${Number(v)}K`} width={55} />
             <Tooltip
-              formatter={(v, name) => [`${formatILS(Number(v) * 1000, true)}`, name === 'דירה' ? `דירה` : `בורסה ${returnRate}%`]}
+              formatter={(v, name) => [formatILS(Number(v) * 1000, true), name === 'דירה' ? 'דירה' : `בורסה ${returnRate}%`]}
               contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
             <Line type="monotone" dataKey="דירה" stroke="#FB923C" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
@@ -229,7 +215,7 @@ export default function SimulatorsPage() {
           <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full bg-[#818CF8] inline-block" />בורסה ({returnRate}% שנתי)</span>
         </div>
         <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
-          * דירה: הון עצמי + שכ"ד − החזרי משכנתא − 5% עלויות רכישה. לא כולל מס, תחזוקה ועמלות. השוואה גסה בלבד.
+          * לא כולל מס, תחזוקה ועמלות. השוואה גסה בלבד.
         </p>
       </Card>
     </div>
@@ -237,21 +223,13 @@ export default function SimulatorsPage() {
 }
 
 interface SliderFullProps {
-  label: string
-  value: number
-  onChange: (v: number) => void
-  min: number
-  max: number
-  step: number
-  format: (v: number) => string
+  label: string; value: number; onChange: (v: number) => void
+  min: number; max: number; step: number; format: (v: number) => string
   color: 'primary' | 'gold' | 'danger' | 'info'
 }
 
 const SLIDER_COLORS: Record<string, string> = {
-  primary: 'var(--primary)',
-  gold: 'var(--gold)',
-  danger: 'var(--danger)',
-  info: 'var(--info)',
+  primary: 'var(--primary)', gold: 'var(--gold)', danger: 'var(--danger)', info: 'var(--info)',
 }
 
 function SliderFull({ label, value, onChange, min, max, step, format, color }: SliderFullProps) {
@@ -263,23 +241,11 @@ function SliderFull({ label, value, onChange, min, max, step, format, color }: S
         <span style={{ color: 'var(--muted)' }}>{label}</span>
         <span className="font-bold num" style={{ color: c }}>{format(value)}</span>
       </div>
-      <div className="relative py-2">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={e => onChange(parseFloat(e.target.value))}
-          className="w-full rounded-full appearance-none cursor-pointer"
-          style={{
-            height: '6px',
-            background: `linear-gradient(to right, ${c} ${pct}%, var(--surface2) ${pct}%)`,
-            WebkitAppearance: 'none',
-            touchAction: 'pan-y',
-          }}
-        />
-      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        className="w-full"
+        style={{ background: `linear-gradient(to right, ${c} ${pct}%, var(--surface2) ${pct}%)` }}
+      />
     </div>
   )
 }
