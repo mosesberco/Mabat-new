@@ -8,6 +8,8 @@ import HealthScoreGauge from '@/components/dashboard/HealthScoreGauge'
 import FireProgress from '@/components/dashboard/FireProgress'
 import EmergencyFund from '@/components/dashboard/EmergencyFund'
 import PensionSummary from '@/components/dashboard/PensionSummary'
+import Link from 'next/link'
+import { PlusCircle, Upload, BarChart3 } from 'lucide-react'
 
 export default function DashboardPage() {
   const { data, portfolio, pricesLoading, loading } = usePortfolio()
@@ -16,6 +18,49 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-[var(--muted)]">טוען...</div>
+      </div>
+    )
+  }
+
+  const isEmpty = data.holdings.length === 0 && data.liabilities.length === 0
+
+  if (isEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] fade-up text-center px-4">
+        <div className="text-5xl mb-5">💰</div>
+        <h1 className="text-3xl font-black mb-2">ברוך הבא לכמה</h1>
+        <p className="text-base mb-8 max-w-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+          הנתונים שלך נשמרים אצלך בלבד — ללא שרתים, ללא הרשמה.
+          <br />
+          התחל ביצירת תיק חדש או ייבוא מקובץ Excel.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+          <Link href="/assets"
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all flex-1"
+            style={{ background: 'var(--primary)', color: '#0A0A0F' }}>
+            <PlusCircle size={17} />
+            הוסף נכסים
+          </Link>
+          <Link href="/settings"
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all flex-1"
+            style={{ background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+            <Upload size={17} />
+            ייבא Excel
+          </Link>
+        </div>
+        <div className="mt-10 grid grid-cols-3 gap-4 w-full max-w-sm">
+          {[
+            { emoji: '📊', title: 'ניתוח', desc: 'תובנות אוטומטיות' },
+            { emoji: '🏠', title: 'סימולטור', desc: 'דירה מול בורסה' },
+            { emoji: '🎯', title: 'FIRE', desc: 'מסלול לחופש כלכלי' },
+          ].map(f => (
+            <div key={f.title} className="p-3 rounded-2xl text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="text-2xl mb-1">{f.emoji}</div>
+              <div className="text-xs font-bold">{f.title}</div>
+              <div className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }

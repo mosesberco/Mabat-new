@@ -1,11 +1,11 @@
 'use client'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { sectorBreakdown, computeHealthScore } from '@/lib/calculations'
-import { formatILS, formatPct } from '@/lib/formatters'
+import { formatILS } from '@/lib/formatters'
 import Card from '@/components/shared/Card'
 import Badge from '@/components/shared/Badge'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { AlertTriangle, CheckCircle, TrendingUp, Info } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts'
+import { AlertTriangle, CheckCircle, Info } from 'lucide-react'
 
 export default function AnalysisPage() {
   const { data, portfolio, loading } = usePortfolio()
@@ -17,24 +17,20 @@ export default function AnalysisPage() {
   const { score, breakdown } = computeHealthScore(portfolio, data)
   const sectors = sectorBreakdown(portfolio.holdings)
 
-  // Auto-generated insights
   const insights: { type: 'warn' | 'ok' | 'info'; text: string }[] = []
 
-  // Concentration warnings
   portfolio.holdings.forEach(h => {
     const pct = portfolio.totalAssets > 0 ? (h.liveValue / portfolio.totalAssets) * 100 : 0
     if (pct > 40) {
-      insights.push({ type: 'warn', text: `${h.symbol ?? h.label} מהווה ${pct.toFixed(0)}% מהתיק — ריכוז גבוה מומלץ לא לעלות על 25%` })
+      insights.push({ type: 'warn', text: `${h.symbol ?? h.label} מהווה ${pct.toFixed(0)}% מהתיק — ריכוז גבוה, מומלץ לא לעלות על 25%` })
     }
   })
 
-  // Sector concentration
   const techSector = sectors.find(s => s.sector === 'Tech')
   if (techSector && techSector.pct > 50) {
     insights.push({ type: 'warn', text: `${techSector.pct.toFixed(0)}% מהתיק בטכנולוגיה — שקול פיזור לסקטורים נוספים` })
   }
 
-  // Cash drag
   const cashHoldings = portfolio.holdings.filter(h => h.type === 'cash')
   const totalCash = cashHoldings.reduce((s, h) => s + h.liveValue, 0)
   const cashPct = portfolio.totalAssets > 0 ? (totalCash / portfolio.totalAssets) * 100 : 0
@@ -43,7 +39,6 @@ export default function AnalysisPage() {
     insights.push({ type: 'warn', text: `${cashPct.toFixed(0)}% מהתיק במזומן/פיקדון — עלות הזדמנות: ${formatILS(Math.round(annualOpportunityCost))} לשנה` })
   }
 
-  // Debt vs return
   data.liabilities.forEach(l => {
     const cashRate = cashHoldings.find(h => h.rate)?.rate ?? 0
     if (l.annualRate < (cashRate ?? 0) && totalCash > l.currentBalance) {
@@ -51,14 +46,12 @@ export default function AnalysisPage() {
     }
   })
 
-  // Tax exposure
   const totalGain = portfolio.holdings.reduce((s, h) => s + (h.gain && h.gain > 0 ? h.gain : 0), 0)
   const taxExposure = totalGain * 0.25
   if (taxExposure > 5000) {
     insights.push({ type: 'info', text: `חשיפת מס רווחי הון משוערת: ${formatILS(Math.round(taxExposure))} (25% על רווחים לא ממומשים של ${formatILS(Math.round(totalGain))})` })
   }
 
-  // Savings rate
   if (portfolio.savingsRate >= 30) {
     insights.push({ type: 'ok', text: `שיעור חיסכון מצוין: ${portfolio.savingsRate.toFixed(0)}% — אתה בנתיב מהיר לעצמאות פיננסית` })
   } else if (portfolio.savingsRate < 10) {
@@ -67,6 +60,10 @@ export default function AnalysisPage() {
 
   const COLORS_SECTOR = ['#818CF8', '#F5A623', '#4DB8FF', '#A78BFA', '#FF6B6B', '#FB923C']
 
+  // calculate label width for longest sector name
+  const maxLabelLen = sectors.reduce((m, s) => Math.max(m, s.sector.length), 0)
+  const yAxisWidth = Math.max(90, maxLabelLen * 9)
+
   return (
     <div className="space-y-5 fade-up">
       <div>
@@ -74,7 +71,6 @@ export default function AnalysisPage() {
         <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>תובנות אוטומטיות מבוססות על הנתונים שלך</p>
       </div>
 
-      {/* Insights */}
       <div className="space-y-3">
         {insights.length === 0 && (
           <Card>
@@ -94,7 +90,7 @@ export default function AnalysisPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-        {/* Health Score Breakdown */}
+        {/* Health Score */}
         <Card>
           <div className="flex items-center justify-between mb-4">
             <span className="font-semibold text-sm" style={{ color: 'var(--muted)' }}>ציון בריאות: {score}/100</span>
@@ -107,7 +103,7 @@ export default function AnalysisPage() {
                   <span style={{ color: 'var(--muted)' }}>{b.label}</span>
                   <span className="num">{b.score}/{b.max} · {b.note}</span>
                 </div>
-                <div className="h-2 rounded-full" style={{ background: 'var(--surface2)' }}>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface2)' }}>
                   <div className="h-2 rounded-full transition-all duration-700"
                     style={{ width: `${(b.score / b.max) * 100}%`, background: b.score === b.max ? 'var(--primary)' : b.score > b.max * 0.5 ? 'var(--gold)' : 'var(--danger)' }} />
                 </div>
@@ -120,16 +116,33 @@ export default function AnalysisPage() {
         <Card>
           <div className="font-semibold text-sm mb-4" style={{ color: 'var(--muted)' }}>פיזור סקטורים</div>
           {sectors.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={sectors} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }}>
-                <XAxis type="number" hide />
-                <YAxis type="category" dataKey="sector" width={80} tick={{ fill: '#5B6470', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <ResponsiveContainer width="100%" height={Math.max(160, sectors.length * 38)}>
+              <BarChart
+                data={sectors}
+                layout="vertical"
+                margin={{ top: 2, right: 48, left: 0, bottom: 2 }}
+              >
+                <XAxis type="number" hide domain={[0, 'dataMax']} />
+                <YAxis
+                  type="category"
+                  dataKey="sector"
+                  width={yAxisWidth}
+                  tick={{ fill: 'var(--muted)', fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <Tooltip
-                  formatter={(v) => [`${Number(v).toFixed(1)}%`, 'אחוז']}
+                  formatter={(v) => [`${Number(v).toFixed(1)}%`, 'משקל']}
                   contentStyle={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                 />
-                <Bar dataKey="pct" radius={4}>
+                <Bar dataKey="pct" radius={[0, 5, 5, 0]} minPointSize={4}>
                   {sectors.map((_, i) => <Cell key={i} fill={COLORS_SECTOR[i % COLORS_SECTOR.length]} />)}
+                  <LabelList
+                    dataKey="pct"
+                    position="right"
+                    formatter={(v: unknown) => typeof v === 'number' ? `${v.toFixed(1)}%` : ''}
+                    style={{ fill: 'var(--muted)', fontSize: 11 }}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -139,10 +152,10 @@ export default function AnalysisPage() {
         </Card>
       </div>
 
-      {/* Tax & P&L summary */}
+      {/* Tax & P&L */}
       <Card>
         <div className="font-semibold text-sm mb-4" style={{ color: 'var(--muted)' }}>רווח/הפסד לא ממומש</div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { label: 'רווחים לא ממומשים', value: portfolio.holdings.reduce((s, h) => s + (h.gain && h.gain > 0 ? h.gain : 0), 0), color: 'var(--primary)' },
             { label: 'הפסדים לא ממומשים', value: portfolio.holdings.reduce((s, h) => s + (h.gain && h.gain < 0 ? Math.abs(h.gain) : 0), 0), color: 'var(--danger)' },

@@ -1,15 +1,15 @@
 'use client'
 import { useState } from 'react'
 import { usePortfolio } from '@/hooks/usePortfolio'
-import { exportData, importData } from '@/lib/storage'
+import { exportToExcel, importFromExcel } from '@/lib/storage'
 import Card from '@/components/shared/Card'
-import { Download, Upload, Trash2, Save } from 'lucide-react'
+import { Download, Upload, Trash2, Save, FileSpreadsheet } from 'lucide-react'
 
 export default function SettingsPage() {
   const { data, loading, update, setData } = usePortfolio()
   const [saved, setSaved] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
 
-  // local editable state
   const [profile, setProfile] = useState(() => data.profile)
   const [income, setIncome] = useState(() => data.income)
 
@@ -24,9 +24,15 @@ export default function SettingsPage() {
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const imported = await importData(file)
-    setData(imported)
-    update(_ => imported)
+    setImportError(null)
+    try {
+      const imported = await importFromExcel(file)
+      setData(imported)
+      update(_ => imported)
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'שגיאה בייבוא')
+    }
+    e.target.value = ''
   }
 
   const handleReset = () => {
@@ -92,20 +98,30 @@ export default function SettingsPage() {
         {saved ? 'נשמר!' : 'שמור שינויים'}
       </button>
 
+      {/* Excel backup */}
       <Card>
-        <div className="font-semibold mb-4">גיבוי ושחזור</div>
+        <div className="font-semibold mb-2">ייצוא / ייבוא Excel</div>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+          כל הנתונים נשמרים אצלך במחשב — ייצא לקובץ Excel, ערוך בכל עת, והעלה חזרה להמשיך.
+        </p>
         <div className="flex gap-3 flex-wrap">
-          <button onClick={() => exportData(data)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+          <button onClick={() => exportToExcel(data)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
             style={{ background: 'var(--primary-dim)', color: 'var(--primary)', border: '1px solid rgba(129,140,248,0.2)' }}>
-            <Download size={15} /> ייצא JSON
+            <FileSpreadsheet size={15} /> ייצא Excel
           </button>
-          <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all hover:opacity-80"
+          <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all hover:opacity-80"
             style={{ background: 'var(--gold-dim)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.2)' }}>
-            <Upload size={15} /> ייבא JSON
-            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            <Upload size={15} /> ייבא Excel
+            <input type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" />
           </label>
         </div>
+        {importError && (
+          <p className="text-sm mt-3" style={{ color: 'var(--danger)' }}>{importError}</p>
+        )}
+        <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
+          הקובץ מכיל גיליונות: נכסים · חובות · הכנסות · פרופיל
+        </p>
       </Card>
 
       <Card>
