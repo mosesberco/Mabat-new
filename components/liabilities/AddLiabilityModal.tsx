@@ -31,15 +31,22 @@ export default function AddLiabilityModal({ onClose, onAdd }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="glass w-full max-w-md p-6">
-        <div className="flex items-center justify-between mb-5">
+    <div
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
+      style={{ background: 'rgba(0,0,0,0.7)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        className="glass w-full max-w-md flex flex-col rounded-t-[20px] md:rounded-[20px]"
+        style={{ maxHeight: '92vh', overflow: 'hidden' }}
+      >
+        <div className="flex items-center justify-between p-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
           <h2 className="text-lg font-bold">הוספת חוב / הלוואה</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface2)]">
             <X size={18} style={{ color: 'var(--muted)' }} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6 overflow-y-auto min-h-0">
           <F label="שם ההלוואה" value={label} onChange={setLabel} placeholder="משכנתא, הלוואה בנקאית..." required />
           <F label="קרן מקורית (₪)" value={principal} onChange={setPrincipal} placeholder="700000" type="number" required />
           <F label="יתרה נוכחית (₪)" value={currentBalance} onChange={setCurrentBalance} placeholder="555000" type="number" />
