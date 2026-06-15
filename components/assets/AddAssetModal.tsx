@@ -20,7 +20,7 @@ const CATEGORIES = [
     ],
   },
   {
-    label: 'נוזל / פיקדונות',
+    label: 'נוזלי / פיקדונות',
     types: [
       { value: 'cash' as HoldingType, label: 'מזומן' },
       { value: 'deposit' as HoldingType, label: 'פיקדון' },
@@ -93,106 +93,155 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="glass w-full max-w-lg p-6" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold">הוספת נכס</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface2)]">
-            <X size={18} style={{ color: 'var(--muted)' }} />
-          </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        className="glass w-full flex flex-col md:flex-row"
+        style={{ maxWidth: 700, maxHeight: '90vh', borderRadius: 20 }}
+      >
+        {/* Left panel — type selector */}
+        <div
+          className="md:w-48 flex-shrink-0 p-5 overflow-y-auto"
+          style={{
+            borderBottom: 'none',
+            borderLeft: '1px solid var(--border)',
+            background: 'var(--surface2)',
+            borderRadius: '20px 0 0 20px',
+          }}
+        >
+          <div className="text-xs font-bold mb-4" style={{ color: 'var(--muted)' }}>סוג נכס</div>
+          <div className="space-y-4">
+            {CATEGORIES.map(cat => (
+              <div key={cat.label}>
+                <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted2)' }}>
+                  {cat.label}
+                </div>
+                <div className="space-y-1">
+                  {cat.types.map(t => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => setType(t.value)}
+                      className="w-full text-right px-3 py-2 rounded-xl text-sm transition-all"
+                      style={{
+                        background: type === t.value ? 'var(--primary-dim)' : 'transparent',
+                        color: type === t.value ? 'var(--primary)' : 'var(--muted)',
+                        border: type === t.value ? '1px solid rgba(129,140,248,0.25)' : '1px solid transparent',
+                        fontWeight: type === t.value ? 600 : 400,
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Type selector */}
-          <div>
-            <label className="block text-xs mb-2" style={{ color: 'var(--muted)' }}>סוג נכס</label>
-            <div className="space-y-3">
-              {CATEGORIES.map(cat => (
-                <div key={cat.label}>
-                  <div className="text-[11px] mb-1.5 font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{cat.label}</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {cat.types.map(t => (
-                      <button key={t.value} type="button"
-                        onClick={() => setType(t.value)}
-                        className={`py-1.5 px-3 text-xs rounded-xl border transition-all ${type === t.value ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary-dim)]' : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--border-strong)]'}`}
-                      >
-                        {t.label}
+        {/* Right panel — form */}
+        <div className="flex-1 flex flex-col min-w-0" style={{ borderRadius: '0 20px 20px 0' }}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            <h2 className="text-lg font-bold">הוספת נכס</h2>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface2)]">
+              <X size={18} style={{ color: 'var(--muted)' }} />
+            </button>
+          </div>
+
+          {/* Scrollable form body */}
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+
+            {/* Traded assets */}
+            {isTraded ? (
+              <>
+                <Field label="סמל (Symbol)" value={symbol} onChange={setSymbol} placeholder="NVDA, BTC, 1168723" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="כמות" value={qty} onChange={setQty} placeholder="10" type="number" required />
+                  <div>
+                    <label className="block text-xs mb-1.5" style={{ color: 'var(--muted)' }}>מטבע</label>
+                    <div className="flex gap-2">
+                      {(['ILS', 'USD'] as const).map(c => (
+                        <button key={c} type="button" onClick={() => setCurrency(c)}
+                          className="flex-1 py-2 text-sm rounded-xl border transition-all font-medium"
+                          style={{
+                            background: currency === c ? 'var(--primary-dim)' : 'var(--surface2)',
+                            color: currency === c ? 'var(--primary)' : 'var(--muted)',
+                            border: currency === c ? '1px solid rgba(129,140,248,0.3)' : '1px solid var(--border)',
+                          }}>
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <Field label="עלות בסיס (אופציונלי)" value={costBasis} onChange={setCostBasis} placeholder="שווי קנייה" type="number" />
+              </>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                <Field
+                  label="שם"
+                  value={label}
+                  onChange={setLabel}
+                  placeholder={type === 'pension' ? 'פנסיה כללית מגדל' : type === 'keren_hishtalmut' ? 'קרן השתלמות מיטב' : 'שם הנכס'}
+                  required
+                />
+                <Field label="שווי נוכחי (₪)" value={value} onChange={setValue} placeholder="280000" type="number" required />
+              </div>
+            )}
+
+            {/* Pension / gemel fields */}
+            {isPension && (
+              <>
+                <div className="h-px" style={{ background: 'var(--border)' }} />
+                <div className="text-xs font-semibold" style={{ color: 'var(--purple)' }}>פרטי הפקדות (אופציונלי)</div>
+                <Field label="חברה מנהלת" value={providerName} onChange={setProviderName} placeholder="מגדל, מיטב, הראל..." />
+                <div className="grid grid-cols-3 gap-2">
+                  <Field label="הפקדה חודשית" value={monthlyContrib} onChange={setMonthlyContrib} placeholder="3300" type="number" />
+                  <Field label="חלק מעסיק" value={employerContrib} onChange={setEmployerContrib} placeholder="1430" type="number" />
+                  <Field label="חלק עובד" value={employeeContrib} onChange={setEmployeeContrib} placeholder="1870" type="number" />
+                </div>
+                <div>
+                  <label className="block text-xs mb-1.5" style={{ color: 'var(--muted)' }}>מסלול השקעה</label>
+                  <div className="flex flex-wrap gap-2">
+                    {([['equity', 'מניות'], ['bonds', 'אג"ח'], ['mixed', 'מעורב'], ['money_market', 'כספי']] as const).map(([v, l]) => (
+                      <button key={v} type="button" onClick={() => setTrack(v)}
+                        className="py-1.5 px-3 text-xs rounded-xl border transition-all"
+                        style={{
+                          background: track === v ? 'rgba(167,139,250,0.12)' : 'var(--surface2)',
+                          color: track === v ? 'var(--purple)' : 'var(--muted)',
+                          border: track === v ? '1px solid rgba(167,139,250,0.3)' : '1px solid var(--border)',
+                        }}>
+                        {l}
                       </button>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+                {type === 'pension' && (
+                  <Field label="קצבה חודשית צפויה לפרישה (₪)" value={expectedPension} onChange={setExpectedPension} placeholder="7500" type="number" />
+                )}
+              </>
+            )}
 
-          <div className="h-px" style={{ background: 'var(--border)' }} />
+            {/* Rate for cash/deposit */}
+            {(type === 'cash' || type === 'deposit' || type === 'savings') && (
+              <Field label="ריבית שנתית (%)" value={rate} onChange={setRate} placeholder="3.7" type="number" />
+            )}
 
-          {/* Traded assets */}
-          {isTraded ? (
-            <>
-              <Field label="סמל (Symbol)" value={symbol} onChange={setSymbol} placeholder="NVDA, BTC, 1168723" required />
-              <Field label="כמות" value={qty} onChange={setQty} placeholder="10" type="number" required />
-              <div>
-                <label className="block text-xs mb-1.5" style={{ color: 'var(--muted)' }}>מטבע</label>
-                <div className="flex gap-2">
-                  {(['USD', 'ILS'] as const).map(c => (
-                    <button key={c} type="button" onClick={() => setCurrency(c)}
-                      className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${currency === c ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary-dim)]' : 'border-[var(--border)] text-[var(--muted)]'}`}>
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <Field label="עלות בסיס (₪ אופציונלי)" value={costBasis} onChange={setCostBasis} placeholder="שווי קנייה" type="number" />
-            </>
-          ) : (
-            <>
-              <Field label="שם" value={label} onChange={setLabel} placeholder={type === 'pension' ? 'פנסיה כללית מגדל' : type === 'keren_hishtalmut' ? 'קרן השתלמות מיטב' : 'שם הנכס'} required />
-              <Field label="שווי נוכחי (₪)" value={value} onChange={setValue} placeholder="280000" type="number" required />
-            </>
-          )}
+            <Field label="חשבון / ברוקר (אופציונלי)" value={account} onChange={setAccount} placeholder="אקסלנס, מיטב, אינטראקטיב..." />
 
-          {/* Pension/gemel specific fields */}
-          {isPension && (
-            <>
-              <div className="h-px" style={{ background: 'var(--border)' }} />
-              <div className="text-xs font-semibold" style={{ color: 'var(--purple)' }}>פרטי הפקדות (אופציונלי)</div>
-              <Field label="חברה מנהלת" value={providerName} onChange={setProviderName} placeholder="מגדל, מיטב, הראל..." />
-              <div className="grid grid-cols-3 gap-2">
-                <Field label="הפקדה חודשית כוללת" value={monthlyContrib} onChange={setMonthlyContrib} placeholder="3300" type="number" />
-                <Field label="חלק מעסיק" value={employerContrib} onChange={setEmployerContrib} placeholder="1430" type="number" />
-                <Field label="חלק עובד" value={employeeContrib} onChange={setEmployeeContrib} placeholder="1870" type="number" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1.5" style={{ color: 'var(--muted)' }}>מסלול השקעה</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {([['equity', 'מניות'], ['bonds', "אג\"ח"], ['mixed', 'מעורב'], ['money_market', 'כספי']] as const).map(([v, l]) => (
-                    <button key={v} type="button" onClick={() => setTrack(v)}
-                      className={`py-1 px-2.5 text-xs rounded-lg border transition-all ${track === v ? 'border-[var(--purple)] text-[var(--purple)] bg-[rgba(167,139,250,0.12)]' : 'border-[var(--border)] text-[var(--muted)]'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {type === 'pension' && (
-                <Field label="קצבה חודשית צפויה לפרישה (₪)" value={expectedPension} onChange={setExpectedPension} placeholder="7500" type="number" />
-              )}
-            </>
-          )}
-
-          {/* Cash/deposit rate */}
-          {(type === 'cash' || type === 'deposit' || type === 'savings') && (
-            <Field label="ריבית שנתית (%)" value={rate} onChange={setRate} placeholder="3.7" type="number" />
-          )}
-
-          <Field label="חשבון / ברוקר (אופציונלי)" value={account} onChange={setAccount} placeholder="אקסלנס, מיטב, אינטראקטיב..." />
-
-          <button type="submit"
-            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all"
-            style={{ background: 'var(--primary)', color: '#0A0A0F' }}>
-            הוסף נכס
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl font-bold text-sm transition-all"
+              style={{ background: 'var(--primary)', color: '#0A0A0F' }}
+            >
+              הוסף נכס
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
@@ -205,8 +254,9 @@ function Field({ label, value, onChange, placeholder, type = 'text', required = 
     <div>
       <label className="block text-xs mb-1.5" style={{ color: 'var(--muted)' }}>{label}</label>
       <input
-        type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} required={required}
-        className="w-full px-3 py-2 rounded-xl text-sm outline-none transition-all num"
+        type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} required={required}
+        className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
         style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }}
         onFocus={e => e.target.style.borderColor = 'var(--primary)'}
         onBlur={e => e.target.style.borderColor = 'var(--border)'}
