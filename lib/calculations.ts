@@ -25,9 +25,17 @@ export function holdingValue(h: Holding, prices: PriceMap, usdRate: number): num
 export function computePortfolio(data: FinancialData, prices: PriceMap, usdRate: number): ComputedPortfolio {
   const holdingsComputed = data.holdings.map(h => {
     const liveValue = holdingValue(h, prices, usdRate)
-    const costBasis = h.costBasis ? (h.currency === 'USD' ? h.costBasis * usdRate : h.costBasis) : undefined
-    const gain = costBasis !== undefined ? liveValue - costBasis : undefined
-    const gainPct = costBasis && costBasis > 0 ? ((liveValue - costBasis) / costBasis) * 100 : undefined
+    // costBasis is the purchase PRICE PER UNIT (in the holding's currency) for a
+    // traded asset, so total cost = price/unit × qty — converted to ₪ the same way
+    // liveValue is, making gainPct = (current − buy) / buy. Manual assets (no qty)
+    // treat costBasis as a total.
+    const costTotal = h.costBasis != null
+      ? (h.symbol && h.qty != null
+          ? h.costBasis * h.qty * (h.currency === 'USD' || !h.currency ? usdRate : 1)
+          : h.costBasis)
+      : undefined
+    const gain = costTotal !== undefined ? liveValue - costTotal : undefined
+    const gainPct = costTotal && costTotal > 0 ? ((liveValue - costTotal) / costTotal) * 100 : undefined
     return { ...h, liveValue, gain, gainPct }
   })
 
