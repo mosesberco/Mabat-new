@@ -22,6 +22,15 @@ export function holdingValue(h: Holding, prices: PriceMap, usdRate: number): num
   return h.value ?? 0
 }
 
+// Effective monthly expenses: the sum of itemized fixed expenses when present,
+// otherwise the legacy single profile.monthlyExpenses figure (back-compat).
+export function effectiveMonthlyExpenses(data: FinancialData): number {
+  if (data.expenses && data.expenses.length > 0) {
+    return data.expenses.reduce((s, e) => s + (e.amount || 0), 0)
+  }
+  return data.profile.monthlyExpenses
+}
+
 export function computePortfolio(data: FinancialData, prices: PriceMap, usdRate: number): ComputedPortfolio {
   const holdingsComputed = data.holdings.map(h => {
     const liveValue = holdingValue(h, prices, usdRate)
@@ -57,7 +66,8 @@ export function computePortfolio(data: FinancialData, prices: PriceMap, usdRate:
   }, 0)
 
   const monthlyDebtPayments = liabilitiesComputed.reduce((s, l) => s + l.monthlyPayment, 0)
-  const monthlySavings = monthlyIncome - monthlyDebtPayments - data.profile.monthlyExpenses
+  const monthlyExpenses = effectiveMonthlyExpenses(data)
+  const monthlySavings = monthlyIncome - monthlyDebtPayments - monthlyExpenses
   const savingsRate = monthlyIncome > 0 ? (monthlySavings / monthlyIncome) * 100 : 0
 
   const liquidAssets = holdingsComputed
@@ -76,7 +86,7 @@ export function computePortfolio(data: FinancialData, prices: PriceMap, usdRate:
     .filter(h => PENSION_TYPES.includes(h.type as typeof PENSION_TYPES[number]))
     .reduce((s, h) => s + (h.monthlyContribution ?? 0), 0)
 
-  const totalMonthlyExpenses = data.profile.monthlyExpenses + monthlyDebtPayments
+  const totalMonthlyExpenses = monthlyExpenses + monthlyDebtPayments
   const emergencyMonths = totalMonthlyExpenses > 0 ? liquidAssets / totalMonthlyExpenses : 0
 
   const TYPE_GROUP_LABELS: Record<string, string> = {

@@ -1,22 +1,47 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { exportToExcel, importFromExcel } from '@/lib/storage'
+import { FixedExpense } from '@/lib/types'
+import { formatILS } from '@/lib/formatters'
 import Card from '@/components/shared/Card'
-import { Download, Upload, Trash2, Save, FileSpreadsheet } from 'lucide-react'
+import { Upload, Trash2, Save, FileSpreadsheet, Plus } from 'lucide-react'
 
 export default function SettingsPage() {
-  const { data, loading, update, setData } = usePortfolio()
+  const { data, loading, update } = usePortfolio()
   const [saved, setSaved] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
 
-  const [profile, setProfile] = useState(() => data.profile)
-  const [income, setIncome] = useState(() => data.income)
+  const [profile, setProfile] = useState(data.profile)
+  const [income, setIncome] = useState(data.income)
+  const [expenses, setExpenses] = useState<FixedExpense[]>(data.expenses)
+
+  // usePortfolio loads from localStorage asynchronously, so the initial useState
+  // values are the defaults — that's why edits looked like they never saved.
+  // Re-sync the form once real data arrives (and after an import). Editing only
+  // touches local state (data refs are unchanged), so this never clobbers edits.
+  useEffect(() => {
+    setProfile(data.profile)
+    setIncome(data.income)
+    if (data.expenses.length > 0) setExpenses(data.expenses)
+    // Soft-migrate a legacy single "monthly expenses" figure into one editable row.
+    else if (data.profile.monthlyExpenses > 0) setExpenses([{ id: `e${Date.now()}`, label: 'הוצאות כלליות', amount: data.profile.monthlyExpenses }])
+    else setExpenses([])
+  }, [data.profile, data.income, data.expenses])
 
   if (loading) return <div className="flex items-center justify-center h-64 text-[var(--muted)]">טוען...</div>
 
   const handleSaveProfile = () => {
-    update(d => ({ ...d, profile, income }))
+    const total = expenses.reduce((s, e) => s + (e.amount || 0), 0)
+    update(d => ({
+      ...d,
+      // Keep profile.monthlyExpenses in sync with the itemized total (always — an
+      // empty list means 0, so emptying it can't leave a stale figure that the
+      // effectiveMonthlyExpenses fallback or the soft-migration would resurrect).
+      profile: { ...profile, monthlyExpenses: total },
+      income,
+      expenses,
+    }))
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -27,8 +52,9 @@ export default function SettingsPage() {
     setImportError(null)
     try {
       const imported = await importFromExcel(file)
-      setData(imported)
-      update(_ => imported)
+      // Keep the locally-accumulated net-worth history — the Excel file doesn't
+      // carry snapshots, so importing must not wipe the existing chart history.
+      update(d => ({ ...imported, snapshots: d.snapshots }))
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'שגיאה בייבוא')
     }
@@ -52,9 +78,6 @@ export default function SettingsPage() {
       <Card>
         <div className="font-semibold mb-4">פרופיל</div>
         <div className="space-y-4">
-          <Field label="הוצאות חודשיות (₪)" type="number"
-            value={String(profile.monthlyExpenses)}
-            onChange={v => setProfile(p => ({ ...p, monthlyExpenses: parseFloat(v) || 0 }))} />
           <Field label="יעד כרית ביטחון (חודשים)" type="number"
             value={String(profile.monthlyCushionTarget)}
             onChange={v => setProfile(p => ({ ...p, monthlyCushionTarget: parseInt(v) || 6 }))} />
@@ -91,6 +114,36 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      <Card>
+        <div className="flex items-center justify-between mb-1">
+          <div className="font-semibold">הוצאות קבועות</div>
+          <div className="text-sm num" style={{ color: 'var(--muted)' }}>
+            סה"כ {formatILS(expenses.reduce((s, e) => s + (e.amount || 0), 0))}/חודש
+          </div>
+        </div>
+        <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>רכב, דיור, ביטוחים, מנויים… משמש לחישוב תזרים, שיעור חיסכון ו-FIRE.</p>
+        <div className="space-y-3">
+          {expenses.map((exp, i) => (
+            <div key={exp.id} className="flex gap-3 items-center">
+              <input value={exp.label} onChange={e => setExpenses(arr => arr.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
+                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none" placeholder="רכב, דיור, ביטוחים..."
+                style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+              <input type="number" value={exp.amount || ''} onChange={e => setExpenses(arr => arr.map((x, j) => j === i ? { ...x, amount: parseFloat(e.target.value) || 0 } : x))}
+                className="w-28 px-3 py-2 rounded-xl text-sm outline-none num" placeholder="₪ לחודש"
+                style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+              <button onClick={() => setExpenses(arr => arr.filter((_, j) => j !== i))}
+                className="p-2 rounded-lg hover:bg-[var(--danger-dim)] transition-colors" style={{ color: 'var(--muted)' }}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+          <button onClick={() => setExpenses(arr => [...arr, { id: `e${Date.now()}`, label: '', amount: 0 }])}
+            className="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1" style={{ color: 'var(--primary)', background: 'var(--primary-dim)' }}>
+            <Plus size={12} /> הוסף הוצאה
+          </button>
+        </div>
+      </Card>
+
       <button onClick={handleSaveProfile}
         className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all"
         style={{ background: saved ? 'var(--primary)' : 'var(--surface2)', color: saved ? '#0A0A0F' : 'var(--text)', border: '1px solid var(--border)' }}>
@@ -120,7 +173,7 @@ export default function SettingsPage() {
           <p className="text-sm mt-3" style={{ color: 'var(--danger)' }}>{importError}</p>
         )}
         <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
-          הקובץ מכיל גיליונות: נכסים · חובות · הכנסות · פרופיל
+          הקובץ מכיל גיליונות: נכסים · חובות · הכנסות · הוצאות קבועות · פרופיל
         </p>
       </Card>
 

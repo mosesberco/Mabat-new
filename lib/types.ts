@@ -28,6 +28,12 @@ export interface IncomeSource {
   taxBracket?: number           // מדרגת מס בפועל (לחישוב חיסכון פנסיוני)
 }
 
+export interface FixedExpense {
+  id: string
+  label: string                 // רכב, דיור, ביטוחים...
+  amount: number                // הוצאה חודשית (₪)
+}
+
 export interface Holding {
   id: string
   type: HoldingType
@@ -73,6 +79,7 @@ export interface NetWorthSnapshot {
 export interface FinancialData {
   profile: Profile
   income: IncomeSource[]
+  expenses: FixedExpense[]
   holdings: Holding[]
   liabilities: Liability[]
   snapshots: NetWorthSnapshot[]

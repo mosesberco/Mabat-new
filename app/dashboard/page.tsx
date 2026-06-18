@@ -1,5 +1,6 @@
 'use client'
 import { usePortfolio } from '@/hooks/usePortfolio'
+import { effectiveMonthlyExpenses } from '@/lib/calculations'
 import NetWorthHero from '@/components/dashboard/NetWorthHero'
 import AllocationRing from '@/components/dashboard/AllocationRing'
 import CashFlowWaterfall from '@/components/dashboard/CashFlowWaterfall'
@@ -78,7 +79,7 @@ export default function DashboardPage() {
       <NetWorthTimeline snapshots={data.snapshots} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-        <FireProgress portfolio={portfolio} monthlyExpenses={data.profile.monthlyExpenses} />
+        <FireProgress portfolio={portfolio} monthlyExpenses={effectiveMonthlyExpenses(data)} />
         <EmergencyFund portfolio={portfolio} target={data.profile.monthlyCushionTarget} />
       </div>
 
