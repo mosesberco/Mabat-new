@@ -50,6 +50,7 @@ export default function AssetsPage() {
           totalAssets={portfolio.totalAssets}
           onDelete={deleteHolding}
           usdRate={usdRate}
+          pricesLoading={pricesLoading}
         />
       </Card>
 

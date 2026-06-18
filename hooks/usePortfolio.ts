@@ -29,6 +29,17 @@ export function usePortfolio() {
     })
   }, [loading, data.holdings])
 
+  // Keep prices and FX rates fresh: re-poll every 2 minutes in the background
+  // (forced, bypassing the cache). Silent — no loading spinner on each tick.
+  useEffect(() => {
+    if (loading) return
+    const REFRESH_MS = 2 * 60 * 1000
+    const id = setInterval(() => {
+      fetchPrices(data.holdings, { force: true }).then(setPrices)
+    }, REFRESH_MS)
+    return () => clearInterval(id)
+  }, [loading, data.holdings])
+
   useEffect(() => {
     if (loading) return
     const computed = computePortfolio(data, prices, usdRate)
