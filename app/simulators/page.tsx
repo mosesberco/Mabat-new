@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { usePortfolio } from '@/hooks/usePortfolio'
-import { computeMillionairePath, computeFIRE } from '@/lib/calculations'
+import { computeMillionairePath, computeFIRE, effectiveMonthlyExpenses } from '@/lib/calculations'
 import { formatILS } from '@/lib/formatters'
 import Card from '@/components/shared/Card'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts'
@@ -58,7 +58,7 @@ export default function SimulatorsPage() {
     return <div className="flex items-center justify-center h-64 text-[var(--muted)]">טוען...</div>
   }
 
-  const fireNumber = computeFIRE(portfolio, data.profile.monthlyExpenses).fireNumber
+  const fireNumber = computeFIRE(portfolio, effectiveMonthlyExpenses(data)).fireNumber
   const fireTarget = Math.round(fireNumber / 100000) * 100000
   // Every target chip (presets, FIRE, custom slider) writes to customTarget;
   // useCustomTarget only toggles the fine-tune slider, so the active target is
@@ -141,13 +141,13 @@ export default function SimulatorsPage() {
 
         {useCustomTarget && (
           <div className="mb-4">
-            <SliderFull label="יעד מותאם" value={customTarget} onChange={setCustomTarget} min={500000} max={10_000_000} step={100000} format={v => formatILS(v, true)} color="primary" />
+            <SliderFull label="יעד מותאם" value={customTarget} onChange={setCustomTarget} min={500000} max={10_000_000} step={100000} suffix="₪" color="primary" />
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
           <NumberField label="חיסכון חודשי" value={monthlySavings} onChange={setSavingsInput} suffix="₪ לחודש" max={1_000_000} color="var(--primary)" />
-          <SliderFull label="תשואה שנתית צפויה" value={returnRate} onChange={setReturnRate} min={3} max={15} step={0.5} format={v => `${v}%`} color="gold" />
+          <SliderFull label="תשואה שנתית צפויה" value={returnRate} onChange={setReturnRate} min={3} max={15} step={0.5} suffix="%" color="gold" />
         </div>
 
         <ResponsiveContainer width="100%" height={220}>
@@ -175,14 +175,14 @@ export default function SimulatorsPage() {
 
         <div className="space-y-4 mb-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SliderFull label="הון עצמי (מקדמה)" value={downPayment} onChange={setDownPayment} min={100000} max={3000000} step={50000} format={v => formatILS(v, true)} color="info" />
-            <SliderFull label="משכנתא" value={mortgage} onChange={setMortgage} min={0} max={5000000} step={50000} format={v => formatILS(v, true)} color="info" />
-            <SliderFull label="ריבית משכנתא שנתית" value={mortgageRate} onChange={setMortgageRate} min={1} max={12} step={0.25} format={v => `${v}%`} color="danger" />
-            <SliderFull label="תקופת משכנתא (שנים)" value={mortgageTerm} onChange={setMortgageTerm} min={10} max={30} step={1} format={v => `${v} שנ'`} color="danger" />
-            <SliderFull label={'שכ"ד חודשי (הכנסה)'} value={aptRent} onChange={setAptRent} min={1000} max={20000} step={500} format={v => formatILS(v, true)} color="primary" />
-            <SliderFull label="עליית ערך שנתית" value={aptAppreciation} onChange={setAptAppreciation} min={0} max={10} step={0.25} format={v => `${v}%`} color="primary" />
+            <SliderFull label="הון עצמי (מקדמה)" value={downPayment} onChange={setDownPayment} min={100000} max={3000000} step={50000} suffix="₪" color="info" />
+            <SliderFull label="משכנתא" value={mortgage} onChange={setMortgage} min={0} max={5000000} step={50000} suffix="₪" color="info" />
+            <SliderFull label="ריבית משכנתא שנתית" value={mortgageRate} onChange={setMortgageRate} min={1} max={12} step={0.25} suffix="%" color="danger" />
+            <SliderFull label="תקופת משכנתא (שנים)" value={mortgageTerm} onChange={setMortgageTerm} min={10} max={30} step={1} suffix="שנ'" color="danger" />
+            <SliderFull label={'שכ"ד חודשי (הכנסה)'} value={aptRent} onChange={setAptRent} min={1000} max={20000} step={500} suffix="₪" color="primary" />
+            <SliderFull label="עליית ערך שנתית" value={aptAppreciation} onChange={setAptAppreciation} min={0} max={10} step={0.25} suffix="%" color="primary" />
           </div>
-          <SliderFull label="תקופת השוואה" value={period} onChange={setPeriod} min={5} max={30} step={1} format={v => `${v} שנ'`} color="gold" />
+          <SliderFull label="תקופת השוואה" value={period} onChange={setPeriod} min={5} max={30} step={1} suffix="שנ'" color="gold" />
         </div>
 
         {/* Summary */}
@@ -265,7 +265,7 @@ function NumberField({ label, value, onChange, suffix, max = 100_000_000, color 
 
 interface SliderFullProps {
   label: string; value: number; onChange: (v: number) => void
-  min: number; max: number; step: number; format: (v: number) => string
+  min: number; max: number; step: number; suffix?: string
   color: 'primary' | 'gold' | 'danger' | 'info'
 }
 
@@ -273,17 +273,40 @@ const SLIDER_COLORS: Record<string, string> = {
   primary: 'var(--primary)', gold: 'var(--gold)', danger: 'var(--danger)', info: 'var(--info)',
 }
 
-function SliderFull({ label, value, onChange, min, max, step, format, color }: SliderFullProps) {
-  const pct = ((value - min) / (max - min)) * 100
+function SliderFull({ label, value, onChange, min, max, step, suffix, color }: SliderFullProps) {
   const c = SLIDER_COLORS[color]
+  const clamped = Math.min(Math.max(value, min), max)
+  const pct = ((clamped - min) / (max - min)) * 100
+  // The value is an editable number: drag the slider OR type a figure (clamped to
+  // [min, max] — keeps the thumb and the simulated value in sync and avoids huge
+  // typed values blowing up array-sized params). A local edit string holds the
+  // in-progress input so partial entries like "5." aren't reformatted mid-typing.
+  const [text, setText] = useState<string | null>(null)
+  const display = text ?? value.toLocaleString('en-US')
   return (
     <div>
-      <div className="flex justify-between text-sm mb-2">
-        <span style={{ color: 'var(--muted)' }}>{label}</span>
-        <span className="font-bold num" style={{ color: c }}>{format(value)}</span>
+      <div className="flex justify-between items-center text-sm mb-2 gap-2">
+        <span className="min-w-0 truncate" style={{ color: 'var(--muted)' }}>{label}</span>
+        <span className="flex items-center gap-1 flex-shrink-0">
+          <input
+            type="text" inputMode="decimal" dir="ltr"
+            value={display}
+            placeholder="0"
+            onChange={e => {
+              setText(e.target.value)
+              const n = parseFloat(e.target.value.replace(/,/g, ''))
+              if (!isNaN(n)) onChange(Math.min(Math.max(n, min), max))
+            }}
+            onFocus={e => e.currentTarget.select()}
+            onBlur={() => setText(null)}
+            className="w-24 bg-transparent outline-none text-end font-bold num"
+            style={{ color: c }}
+          />
+          {suffix && <span className="text-xs whitespace-nowrap" style={{ color: 'var(--muted)' }}>{suffix}</span>}
+        </span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(parseFloat(e.target.value))}
+      <input type="range" min={min} max={max} step={step} value={clamped}
+        onChange={e => { setText(null); onChange(parseFloat(e.target.value)) }}
         className="w-full"
         style={{ background: `linear-gradient(to left, ${c} ${pct}%, var(--surface2) ${pct}%)` }}
       />

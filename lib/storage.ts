@@ -1,4 +1,4 @@
-import { FinancialData, NetWorthSnapshot, Holding, Liability, IncomeSource, Profile, HoldingType, Currency, Frequency } from './types'
+import { FinancialData, NetWorthSnapshot, Holding, Liability, IncomeSource, FixedExpense, Profile, HoldingType, Currency, Frequency } from './types'
 import * as XLSX from 'xlsx'
 
 const KEY = 'kamah_v1'
@@ -12,6 +12,7 @@ export const defaultData: FinancialData = {
     monthlyExpenses: 10000,
   },
   income: [],
+  expenses: [],
   holdings: [],
   liabilities: [],
   snapshots: [],
@@ -22,7 +23,17 @@ export function loadData(): FinancialData {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return defaultData
-    return JSON.parse(raw) as FinancialData
+    // Normalize against defaults so data saved by an older version (e.g. without
+    // `expenses`) loads without crashing on missing fields.
+    const parsed = JSON.parse(raw) as Partial<FinancialData>
+    return {
+      profile: { ...defaultData.profile, ...(parsed.profile ?? {}) },
+      income: parsed.income ?? [],
+      expenses: parsed.expenses ?? [],
+      holdings: parsed.holdings ?? [],
+      liabilities: parsed.liabilities ?? [],
+      snapshots: parsed.snapshots ?? [],
+    }
   } catch {
     return defaultData
   }
@@ -90,6 +101,13 @@ export function exportToExcel(data: FinancialData): void {
     'גמל מעסיק (%)': i.employerGemelPct ?? '',
   }))
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incRows.length ? incRows : [{}]), 'הכנסות')
+
+  // Sheet: Fixed expenses (הוצאות קבועות) — additive; older importers ignore it.
+  const expRows = data.expenses.map(e => ({
+    'תיאור': e.label,
+    'סכום חודשי (₪)': e.amount,
+  }))
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expRows.length ? expRows : [{}]), 'הוצאות קבועות')
 
   // Sheet 4: Profile (פרופיל)
   const profileRows = [
@@ -169,6 +187,18 @@ export function importFromExcel(file: File): Promise<FinancialData> {
             employerGemelPct: num(row['גמל מעסיק (%)']) ?? undefined,
           }))
 
+        // Fixed expenses — optional sheet; absent in files exported before this
+        // feature, so default to [] (keeps old Excel files importable).
+        const ws5 = wb.Sheets['הוצאות קבועות']
+        const rawExp = ws5 ? XLSX.utils.sheet_to_json(ws5) as Record<string, unknown>[] : []
+        const expenses: FixedExpense[] = rawExp
+          .filter(r => r['תיאור'])
+          .map((row, i) => ({
+            id: `e${Date.now()}_${i}`,
+            label: str(row['תיאור']) || '',
+            amount: num(row['סכום חודשי (₪)']) ?? 0,
+          }))
+
         // Profile
         const ws4 = wb.Sheets['פרופיל']
         const rawProfile = ws4 ? XLSX.utils.sheet_to_json(ws4) as { שדה: string; ערך: string | number }[] : []
@@ -183,7 +213,7 @@ export function importFromExcel(file: File): Promise<FinancialData> {
           currency: 'ILS',
         }
 
-        resolve({ profile, income, holdings, liabilities, snapshots: [] })
+        resolve({ profile, income, expenses, holdings, liabilities, snapshots: [] })
       } catch {
         reject(new Error('קובץ Excel לא תקין'))
       }
