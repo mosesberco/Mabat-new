@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { computeMillionairePath, computeFIRE, effectiveMonthlyExpenses } from '@/lib/calculations'
+import { monthlyKerenContributions, monthlyPensionContributions } from '@/lib/israeliSalary'
 import { formatILS } from '@/lib/formatters'
 import Card from '@/components/shared/Card'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts'
@@ -64,10 +65,12 @@ export default function SimulatorsPage() {
   // useCustomTarget only toggles the fine-tune slider, so the active target is
   // always customTarget.
   const milTarget = customTarget
-  // Default to the user's current monthly savings (floored at 0 so an unset /
-  // negative profile doesn't model "losing money" forever); the user can type
-  // their own figure to override it.
-  const defaultSavings = Math.max(0, Math.round(portfolio.monthlySavings))
+  // Default monthly savings = discretionary (net − expenses, floored at 0) plus
+  // keren-hishtalmut contributions (relatively liquid forced savings). Pension is
+  // shown separately because it's locked until retirement. The user can override.
+  const kerenMonthly = Math.round(monthlyKerenContributions(data.income))
+  const pensionMonthly = Math.round(monthlyPensionContributions(data.income))
+  const defaultSavings = Math.max(0, Math.round(portfolio.monthlySavings)) + kerenMonthly
   const monthlySavings = savingsInput ?? defaultSavings
   const milPath = computeMillionairePath(portfolio.netWorth, monthlySavings, milTarget, returnRate / 100)
   const milYears = milPath.find(p => p.value >= milTarget)?.year ?? null
@@ -149,6 +152,13 @@ export default function SimulatorsPage() {
           <NumberField label="חיסכון חודשי" value={monthlySavings} onChange={setSavingsInput} suffix="₪ לחודש" max={1_000_000} color="var(--primary)" />
           <SliderFull label="תשואה שנתית צפויה" value={returnRate} onChange={setReturnRate} min={3} max={15} step={0.5} suffix="%" color="gold" />
         </div>
+
+        {(kerenMonthly > 0 || pensionMonthly > 0) && (
+          <p className="text-xs -mt-2 mb-5" style={{ color: 'var(--muted)' }}>
+            {kerenMonthly > 0 && <>כולל קה"ש {formatILS(kerenMonthly, true)}/חודש. </>}
+            {pensionMonthly > 0 && <>פנסיה {formatILS(pensionMonthly, true)}/חודש נצברת בנפרד (לא נזיל, לא נספר ביעד).</>}
+          </p>
+        )}
 
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={milPath} margin={{ top: 8, right: 12, left: 12, bottom: 4 }}>

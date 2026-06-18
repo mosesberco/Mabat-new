@@ -97,6 +97,12 @@ export function exportToExcel(data: FinancialData): void {
     'ברוטו (₪)': i.gross,
     'נטו (₪)': i.net,
     'תדירות': i.frequency,
+    'מצב הזנה': i.inputMode === 'gross' ? 'ברוטו' : 'נטו',
+    // Tri-state: explicit 'לא' for off, 'כן' for on, '' for unset (default on),
+    // so a deliberately-disabled pension survives an Excel round-trip.
+    'מקזז פנסיה': i.hasPension === false ? 'לא' : i.hasPension ? 'כן' : '',
+    'מקזז קה"ש': i.hasKeren ? 'כן' : '',
+    'נקודות זיכוי': i.creditPoints ?? '',
     'פנסיית מעסיק (%)': i.employerPensionPct ?? '',
     'גמל מעסיק (%)': i.employerGemelPct ?? '',
   }))
@@ -183,6 +189,11 @@ export function importFromExcel(file: File): Promise<FinancialData> {
             gross: num(row['ברוטו (₪)']) ?? 0,
             net: num(row['נטו (₪)']) ?? 0,
             frequency: (str(row['תדירות']) as Frequency) || 'monthly',
+            // Optional columns — absent in files exported before gross mode existed.
+            inputMode: str(row['מצב הזנה']) === 'ברוטו' ? 'gross' as const : undefined,
+            hasPension: row['מקזז פנסיה'] === 'כן' ? true : row['מקזז פנסיה'] === 'לא' ? false : undefined,
+            hasKeren: row['מקזז קה"ש'] === 'כן' ? true : undefined,
+            creditPoints: num(row['נקודות זיכוי']) ?? undefined,
             employerPensionPct: num(row['פנסיית מעסיק (%)']) ?? undefined,
             employerGemelPct: num(row['גמל מעסיק (%)']) ?? undefined,
           }))

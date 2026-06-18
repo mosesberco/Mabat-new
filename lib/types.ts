@@ -23,6 +23,10 @@ export interface IncomeSource {
   gross: number
   net: number
   frequency: Frequency
+  inputMode?: 'net' | 'gross'   // ברירת מחדל net; ב-gross הנטו נגזר מהברוטו
+  hasPension?: boolean          // מקזז הפרשות פנסיה (במצב ברוטו)
+  hasKeren?: boolean            // מקזז הפרשות קרן השתלמות (במצב ברוטו)
+  creditPoints?: number         // נקודות זיכוי (במצב ברוטו)
   employerPensionPct?: number   // % שמעסיק מפקיד לפנסיה
   employerGemelPct?: number     // % שמעסיק מפקיד לגמל/השתלמות
   taxBracket?: number           // מדרגת מס בפועל (לחישוב חיסכון פנסיוני)

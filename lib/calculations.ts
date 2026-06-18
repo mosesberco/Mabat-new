@@ -1,4 +1,5 @@
 import { FinancialData, Holding, Liability, PriceMap, ComputedPortfolio, TYPE_COLORS, SECTOR_MAP, LIQUID_TYPES, PENSION_TYPES } from './types'
+import { incomeNet } from './israeliSalary'
 
 export function monthlyPayment(balance: number, annualRate: number, remainingPayments: number): number {
   if (remainingPayments <= 0) return 0
@@ -58,12 +59,8 @@ export function computePortfolio(data: FinancialData, prices: PriceMap, usdRate:
   const totalLiabilities = data.liabilities.reduce((s, l) => s + l.currentBalance, 0)
   const netWorth = totalAssets - totalLiabilities
 
-  const monthlyIncome = data.income.reduce((s, inc) => {
-    const net = inc.net
-    if (inc.frequency === 'monthly') return s + net
-    if (inc.frequency === 'quarterly') return s + net / 3
-    return s + net / 12
-  }, 0)
+  // incomeNet already returns a monthly figure (it normalizes by frequency).
+  const monthlyIncome = data.income.reduce((s, inc) => s + incomeNet(inc), 0)
 
   const monthlyDebtPayments = liabilitiesComputed.reduce((s, l) => s + l.monthlyPayment, 0)
   const monthlyExpenses = effectiveMonthlyExpenses(data)
