@@ -244,7 +244,7 @@ function SliderFull({ label, value, onChange, min, max, step, format, color }: S
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
         className="w-full"
-        style={{ background: `linear-gradient(to right, ${c} ${pct}%, var(--surface2) ${pct}%)` }}
+        style={{ background: `linear-gradient(to left, ${c} ${pct}%, var(--surface2) ${pct}%)` }}
       />
     </div>
   )

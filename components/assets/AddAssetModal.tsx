@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Holding, HoldingType, TRADED_TYPES, PENSION_TYPES } from '@/lib/types'
 import { X } from 'lucide-react'
 
@@ -92,7 +93,9 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
     onClose()
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
       style={{ background: 'rgba(0,0,0,0.75)' }}
@@ -241,7 +244,8 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
