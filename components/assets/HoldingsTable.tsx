@@ -15,9 +15,10 @@ interface Props {
   totalAssets: number
   onDelete: (id: string) => void
   usdRate: number
+  pricesLoading?: boolean
 }
 
-export default function HoldingsTable({ holdings, totalAssets, onDelete, usdRate }: Props) {
+export default function HoldingsTable({ holdings, totalAssets, onDelete, usdRate, pricesLoading }: Props) {
   if (holdings.length === 0) {
     return <div className="text-center py-12 text-[var(--muted)]">אין נכסים עדיין — הוסף את הנכס הראשון</div>
   }
@@ -51,9 +52,19 @@ export default function HoldingsTable({ holdings, totalAssets, onDelete, usdRate
                   <Badge label={TYPE_LABELS[h.type] ?? h.type} color="muted" />
                 </td>
                 <td className="py-3 px-3">
-                  <div className="font-bold num" style={{ color }}>{formatILS(Math.round(h.liveValue))}</div>
-                  {h.currency === 'USD' && h.symbol && (
-                    <div className="text-xs num" style={{ color: 'var(--muted)' }}>שער: {usdRate.toFixed(2)}</div>
+                  {h.symbol && h.liveValue === 0 ? (
+                    pricesLoading ? (
+                      <div className="text-xs animate-pulse" style={{ color: 'var(--muted)' }}>טוען מחיר…</div>
+                    ) : (
+                      <div className="text-xs" style={{ color: 'var(--muted)' }}>מחיר לא זמין</div>
+                    )
+                  ) : (
+                    <>
+                      <div className="font-bold num" style={{ color }}>{formatILS(Math.round(h.liveValue))}</div>
+                      {h.currency === 'USD' && h.symbol && (
+                        <div className="text-xs num" style={{ color: 'var(--muted)' }}>שער: {usdRate.toFixed(2)}</div>
+                      )}
+                    </>
                   )}
                 </td>
                 <td className="py-3 px-3">

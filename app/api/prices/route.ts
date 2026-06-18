@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'edge'
 
 const FINNHUB_KEY = process.env.FINNHUB_API_KEY ?? ''
-const CACHE_SECONDS = 600
+const CACHE_SECONDS = 120
 
 const CRYPTO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin',
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   // USD/ILS exchange rate via public API
   try {
     const res = await fetch('https://open.er-api.com/v6/latest/USD', {
-      next: { revalidate: 3600 },
+      next: { revalidate: CACHE_SECONDS },
     })
     const data = await res.json() as { rates: Record<string, number> }
     results['__USD_ILS'] = data.rates['ILS'] ?? 3.7
