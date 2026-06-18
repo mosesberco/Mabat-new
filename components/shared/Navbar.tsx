@@ -19,7 +19,7 @@ export default function Navbar() {
     <>
       {/* Desktop sidebar */}
       <nav
-        className="hidden md:flex fixed top-0 right-0 h-screen w-[220px] flex-col z-50"
+        className="hidden md:flex fixed top-0 app-rail h-screen w-[220px] flex-col z-50"
         style={{ background: 'var(--surface)', borderLeft: '1px solid var(--border)' }}
       >
         <div className="px-6 py-7 mb-2">

@@ -25,7 +25,7 @@ function mortgageBalance(principal: number, annualRate: number, termMonths: numb
 export default function SimulatorsPage() {
   const { data, portfolio, loading } = usePortfolio()
 
-  const [savingsBoost, setSavingsBoost] = useState(0)
+  const [savingsInput, setSavingsInput] = useState<number | null>(null)
   const [returnRate, setReturnRate] = useState(7)
   const [useCustomTarget, setUseCustomTarget] = useState(false)
   const [customTarget, setCustomTarget] = useState(2000000)
@@ -60,9 +60,16 @@ export default function SimulatorsPage() {
 
   const fireNumber = computeFIRE(portfolio, data.profile.monthlyExpenses).fireNumber
   const fireTarget = Math.round(fireNumber / 100000) * 100000
-  const milTarget = useCustomTarget ? customTarget : 1_000_000
-  const adjustedSavings = portfolio.monthlySavings + savingsBoost
-  const milPath = computeMillionairePath(portfolio.netWorth, adjustedSavings, milTarget, returnRate / 100)
+  // Every target chip (presets, FIRE, custom slider) writes to customTarget;
+  // useCustomTarget only toggles the fine-tune slider, so the active target is
+  // always customTarget.
+  const milTarget = customTarget
+  // Default to the user's current monthly savings (floored at 0 so an unset /
+  // negative profile doesn't model "losing money" forever); the user can type
+  // their own figure to override it.
+  const defaultSavings = Math.max(0, Math.round(portfolio.monthlySavings))
+  const monthlySavings = savingsInput ?? defaultSavings
+  const milPath = computeMillionairePath(portfolio.netWorth, monthlySavings, milTarget, returnRate / 100)
   const milYears = milPath.find(p => p.value >= milTarget)?.year ?? null
 
   const lastYear = aptData[aptData.length - 1]
@@ -139,7 +146,7 @@ export default function SimulatorsPage() {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-          <SliderFull label="תוספת חיסכון חודשית" value={savingsBoost} onChange={setSavingsBoost} min={0} max={15000} step={500} format={v => `+${formatILS(v, true)}`} color="primary" />
+          <NumberField label="חיסכון חודשי" value={monthlySavings} onChange={setSavingsInput} suffix="₪ לחודש" max={1_000_000} color="var(--primary)" />
           <SliderFull label="תשואה שנתית צפויה" value={returnRate} onChange={setReturnRate} min={3} max={15} step={0.5} format={v => `${v}%`} color="gold" />
         </div>
 
@@ -218,6 +225,40 @@ export default function SimulatorsPage() {
           * לא כולל מס, תחזוקה ועמלות. השוואה גסה בלבד.
         </p>
       </Card>
+    </div>
+  )
+}
+
+interface NumberFieldProps {
+  label: string; value: number; onChange: (v: number) => void
+  suffix?: string; max?: number; color?: string
+}
+
+function NumberField({ label, value, onChange, suffix, max = 100_000_000, color = 'var(--primary)' }: NumberFieldProps) {
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-2">
+        <span style={{ color: 'var(--muted)' }}>{label}</span>
+      </div>
+      <div
+        className="flex items-center gap-2 px-3 rounded-xl"
+        style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}
+      >
+        <input
+          type="text"
+          inputMode="numeric"
+          dir="ltr"
+          value={value === 0 ? '' : value.toLocaleString('en-US')}
+          placeholder="0"
+          onChange={e => {
+            const digits = e.target.value.replace(/[^\d]/g, '')
+            onChange(digits === '' ? 0 : Math.min(parseInt(digits, 10), max))
+          }}
+          className="flex-1 min-w-0 bg-transparent outline-none text-sm font-bold num py-2.5 text-right"
+          style={{ color }}
+        />
+        {suffix && <span className="text-xs whitespace-nowrap" style={{ color: 'var(--muted)' }}>{suffix}</span>}
+      </div>
     </div>
   )
 }

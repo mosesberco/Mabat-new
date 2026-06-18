@@ -17,9 +17,25 @@
   --text: #E2E4F0;
   --muted: #5B6480;
   --muted2: #3A3F55;
+  --rail-w: 220px;
+  --app-max: 1420px;
 }
 
 * { box-sizing: border-box; }
+
+/* Desktop app shell: center the fixed sidebar (rail) and the content together
+   as one unit so wide screens get symmetric side gutters instead of stranding
+   the centered content with dead space next to the rail. The gutter collapses
+   to 0 once the viewport is narrower than --app-max. */
+@media (min-width: 768px) {
+  .app-shell {
+    padding-right: calc(var(--rail-w) + max(0px, (100vw - var(--app-max)) / 2));
+    padding-left: max(0px, (100vw - var(--app-max)) / 2);
+  }
+  .app-rail {
+    right: max(0px, (100vw - var(--app-max)) / 2);
+  }
+}
 
 html, body {
   background: var(--bg);
