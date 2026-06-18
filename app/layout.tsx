@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
       </head>
       <body
-        className="md:pr-[220px] pt-[52px] md:pt-0 pb-[72px] md:pb-0"
+        className="app-shell pt-[52px] md:pt-0 pb-[72px] md:pb-0"
       >
         <Navbar />
         <main className="min-h-screen p-4 md:p-6 max-w-[1200px] mx-auto">
