@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { exportToExcel, importFromExcel } from '@/lib/storage'
-import { FixedExpense } from '@/lib/types'
+import { FixedExpense, IncomeSource } from '@/lib/types'
+import { grossToNet, DEFAULT_CREDIT_POINTS } from '@/lib/israeliSalary'
 import { formatILS } from '@/lib/formatters'
 import Card from '@/components/shared/Card'
 import { Upload, Trash2, Save, FileSpreadsheet, Plus } from 'lucide-react'
@@ -33,13 +34,18 @@ export default function SettingsPage() {
 
   const handleSaveProfile = () => {
     const total = expenses.reduce((s, e) => s + (e.amount || 0), 0)
+    // Persist the derived net for gross-mode incomes so the stored `net` (and its
+    // Excel cell) stays consistent with the gross→net engine.
+    const syncedIncome = income.map(inc => inc.inputMode === 'gross'
+      ? { ...inc, net: grossToNet(inc.gross, { hasPension: inc.hasPension, hasKeren: inc.hasKeren, creditPoints: inc.creditPoints }).net }
+      : inc)
     update(d => ({
       ...d,
       // Keep profile.monthlyExpenses in sync with the itemized total (always — an
       // empty list means 0, so emptying it can't leave a stale figure that the
       // effectiveMonthlyExpenses fallback or the soft-migration would resurrect).
       profile: { ...profile, monthlyExpenses: total },
-      income,
+      income: syncedIncome,
       expenses,
     }))
     setSaved(true)
@@ -91,25 +97,18 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <div className="font-semibold mb-4">הכנסות</div>
+        <div className="font-semibold mb-1">הכנסות</div>
+        <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>הזן נטו, או ברוטו — והמערכת תקזז מס הכנסה, ביטוח לאומי, פנסיה וקה"ש (הערכה לפי 2026).</p>
         <div className="space-y-3">
           {income.map((inc, i) => (
-            <div key={inc.id} className="flex gap-3 items-center">
-              <input value={inc.label} onChange={e => setIncome(arr => arr.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
-                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none" placeholder="תיאור"
-                style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-              <input type="number" value={inc.net} onChange={e => setIncome(arr => arr.map((x, j) => j === i ? { ...x, net: parseFloat(e.target.value) || 0 } : x))}
-                className="w-28 px-3 py-2 rounded-xl text-sm outline-none num" placeholder="₪ נטו"
-                style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-              <button onClick={() => setIncome(arr => arr.filter((_, j) => j !== i))}
-                className="p-2 rounded-lg hover:bg-[var(--danger-dim)] transition-colors" style={{ color: 'var(--muted)' }}>
-                <Trash2 size={14} />
-              </button>
-            </div>
+            <IncomeRow key={inc.id}
+              inc={inc}
+              onChange={next => setIncome(arr => arr.map((x, j) => j === i ? next : x))}
+              onRemove={() => setIncome(arr => arr.filter((_, j) => j !== i))} />
           ))}
           <button onClick={() => setIncome(arr => [...arr, { id: `i${Date.now()}`, label: '', gross: 0, net: 0, frequency: 'monthly' }])}
-            className="text-xs px-3 py-1.5 rounded-lg" style={{ color: 'var(--primary)', background: 'var(--primary-dim)' }}>
-            + הוסף הכנסה
+            className="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1" style={{ color: 'var(--primary)', background: 'var(--primary-dim)' }}>
+            <Plus size={12} /> הוסף הכנסה
           </button>
         </div>
       </Card>
@@ -190,6 +189,90 @@ export default function SettingsPage() {
       <p className="text-xs text-center py-2" style={{ color: 'var(--muted)' }}>
         כל הנתונים נשמרים ב-localStorage בדפדפן שלך בלבד · לא עוברים לשום שרת
       </p>
+    </div>
+  )
+}
+
+function IncomeRow({ inc, onChange, onRemove }: {
+  inc: IncomeSource; onChange: (next: IncomeSource) => void; onRemove: () => void
+}) {
+  const gross = inc.inputMode === 'gross'
+  const bd = gross ? grossToNet(inc.gross, { hasPension: inc.hasPension, hasKeren: inc.hasKeren, creditPoints: inc.creditPoints }) : null
+  return (
+    <div className="rounded-xl p-3 space-y-3" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+      <div className="flex gap-2 items-center">
+        <input value={inc.label} onChange={e => onChange({ ...inc, label: e.target.value })}
+          className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm outline-none" placeholder="משכורת, פרילנס..."
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+        <div className="flex rounded-lg overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--border)' }}>
+          {(['net', 'gross'] as const).map(m => {
+            const active = gross === (m === 'gross')
+            return (
+              <button key={m} type="button"
+                onClick={() => onChange({ ...inc, inputMode: m === 'gross' ? 'gross' : undefined })}
+                className="px-2.5 py-2 text-xs font-medium transition-all"
+                style={{ background: active ? 'var(--primary-dim)' : 'transparent', color: active ? 'var(--primary)' : 'var(--muted)' }}>
+                {m === 'net' ? 'נטו' : 'ברוטו'}
+              </button>
+            )
+          })}
+        </div>
+        <button onClick={onRemove} className="p-2 rounded-lg hover:bg-[var(--danger-dim)] transition-colors flex-shrink-0" style={{ color: 'var(--muted)' }}>
+          <Trash2 size={14} />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-xs flex-shrink-0 w-16" style={{ color: 'var(--muted)' }}>{gross ? 'ברוטו ₪' : 'נטו ₪'}</span>
+        <input type="number" value={(gross ? inc.gross : inc.net) || ''} placeholder="0"
+          onChange={e => { const v = parseFloat(e.target.value) || 0; onChange(gross ? { ...inc, gross: v } : { ...inc, net: v }) }}
+          className="flex-1 px-3 py-2 rounded-lg text-sm outline-none num"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+      </div>
+
+      {gross && (
+        <>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs" style={{ color: 'var(--muted)' }}>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={inc.hasPension ?? true} onChange={e => onChange({ ...inc, hasPension: e.target.checked })} />
+              פנסיה
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={inc.hasKeren ?? false} onChange={e => onChange({ ...inc, hasKeren: e.target.checked })} />
+              קרן השתלמות
+            </label>
+            <span className="flex items-center gap-1.5">
+              נק' זיכוי
+              <input type="number" step="0.25" value={inc.creditPoints ?? DEFAULT_CREDIT_POINTS}
+                onChange={e => onChange({ ...inc, creditPoints: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                className="w-14 px-2 py-1 rounded-md outline-none num"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            </span>
+          </div>
+          {bd && inc.gross > 0 && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+              <BkLine label="מס הכנסה" value={-bd.incomeTax} />
+              <BkLine label="ביטוח לאומי" value={-bd.nationalInsurance} />
+              {(inc.hasPension ?? true) && <BkLine label="פנסיה (עובד)" value={-bd.employeePension} />}
+              {inc.hasKeren && <BkLine label="קה״ש (עובד)" value={-bd.employeeKeren} />}
+              <BkLine label="נטו ביד" value={bd.net} color="var(--text)" strong />
+              {inc.hasKeren && <BkLine label="קה״ש לחיסכון" value={bd.kerenTotal} color="var(--primary)" />}
+              {(inc.hasPension ?? true) && <BkLine label={'פנסיה (לא נזיל)'} value={bd.pensionTotal} color="var(--purple)" />}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function BkLine({ label, value, color, strong }: { label: string; value: number; color?: string; strong?: boolean }) {
+  return (
+    <div className="flex justify-between">
+      <span style={{ color: 'var(--muted)' }}>{label}</span>
+      <span className={`num ${strong ? 'font-bold' : ''}`} style={{ color: color ?? 'var(--muted)' }}>
+        {value < 0 ? '−' : ''}{formatILS(Math.abs(Math.round(value)))}
+      </span>
     </div>
   )
 }
