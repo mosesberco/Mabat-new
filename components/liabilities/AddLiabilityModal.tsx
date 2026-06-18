@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Liability } from '@/lib/types'
 import { X } from 'lucide-react'
 
@@ -30,7 +31,9 @@ export default function AddLiabilityModal({ onClose, onAdd }: Props) {
     onClose()
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
       style={{ background: 'rgba(0,0,0,0.7)' }}
@@ -63,7 +66,8 @@ export default function AddLiabilityModal({ onClose, onAdd }: Props) {
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
