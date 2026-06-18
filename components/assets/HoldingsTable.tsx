@@ -14,11 +14,12 @@ interface Props {
   holdings: EnrichedHolding[]
   totalAssets: number
   onDelete: (id: string) => void
+  onSelect?: (h: EnrichedHolding) => void
   usdRate: number
   pricesLoading?: boolean
 }
 
-export default function HoldingsTable({ holdings, totalAssets, onDelete, usdRate, pricesLoading }: Props) {
+export default function HoldingsTable({ holdings, totalAssets, onDelete, onSelect, usdRate, pricesLoading }: Props) {
   if (holdings.length === 0) {
     return <div className="text-center py-12 text-[var(--muted)]">אין נכסים עדיין — הוסף את הנכס הראשון</div>
   }
@@ -38,7 +39,16 @@ export default function HoldingsTable({ holdings, totalAssets, onDelete, usdRate
             const pct = totalAssets > 0 ? (h.liveValue / totalAssets) * 100 : 0
             const color = TYPE_COLORS[h.type] ?? '#6B7280'
             return (
-              <tr key={h.id} className="glass-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+              <tr
+                key={h.id}
+                onClick={() => onSelect?.(h)}
+                onKeyDown={onSelect ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(h) } } : undefined}
+                role={onSelect ? 'button' : undefined}
+                tabIndex={onSelect ? 0 : undefined}
+                aria-label={onSelect ? `פתח פרטים עבור ${h.symbol ?? h.label ?? h.type}` : undefined}
+                className={`glass-hover ${onSelect ? 'cursor-pointer' : ''}`}
+                style={{ borderBottom: '1px solid var(--border)' }}
+              >
                 <td className="py-3 px-3">
                   <div className="font-semibold" style={{ color: 'var(--text)' }}>
                     {h.symbol ?? h.label ?? h.type}
@@ -91,7 +101,7 @@ export default function HoldingsTable({ holdings, totalAssets, onDelete, usdRate
                 </td>
                 <td className="py-3 px-3">
                   <button
-                    onClick={() => onDelete(h.id)}
+                    onClick={e => { e.stopPropagation(); onDelete(h.id) }}
                     className="p-1.5 rounded-lg transition-colors hover:bg-[var(--danger-dim)]"
                     style={{ color: 'var(--muted)' }}
                   >

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Liability } from '@/lib/types'
 import { X } from 'lucide-react'
@@ -13,6 +13,13 @@ export default function AddLiabilityModal({ onClose, onAdd }: Props) {
   const [annualRate, setAnnualRate] = useState('')
   const [remainingPayments, setRemainingPayments] = useState('')
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
+
+  // Lock the page behind the modal so the bottom-sheet doesn't scroll-bleed on touch.
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

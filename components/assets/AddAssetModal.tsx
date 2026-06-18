@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Holding, HoldingType, TRADED_TYPES, PENSION_TYPES } from '@/lib/types'
 import { X } from 'lucide-react'
@@ -7,6 +7,7 @@ import { X } from 'lucide-react'
 interface Props {
   onClose: () => void
   onAdd: (h: Holding) => void
+  initial?: Holding
 }
 
 const CATEGORIES = [
@@ -46,22 +47,31 @@ const CATEGORIES = [
   },
 ]
 
-export default function AddAssetModal({ onClose, onAdd }: Props) {
-  const [type, setType] = useState<HoldingType>('stock')
-  const [symbol, setSymbol] = useState('')
-  const [label, setLabel] = useState('')
-  const [qty, setQty] = useState('')
-  const [value, setValue] = useState('')
-  const [costBasis, setCostBasis] = useState('')
-  const [account, setAccount] = useState('')
-  const [rate, setRate] = useState('')
-  const [currency, setCurrency] = useState<'ILS' | 'USD'>('ILS')
-  const [monthlyContrib, setMonthlyContrib] = useState('')
-  const [employerContrib, setEmployerContrib] = useState('')
-  const [employeeContrib, setEmployeeContrib] = useState('')
-  const [providerName, setProviderName] = useState('')
-  const [expectedPension, setExpectedPension] = useState('')
-  const [track, setTrack] = useState<'equity' | 'bonds' | 'mixed' | 'money_market'>('equity')
+const numStr = (n?: number) => (n != null ? String(n) : '')
+
+export default function AddAssetModal({ onClose, onAdd, initial }: Props) {
+  const [type, setType] = useState<HoldingType>(initial?.type ?? 'stock')
+  const [symbol, setSymbol] = useState(initial?.symbol ?? '')
+  const [label, setLabel] = useState(initial?.label ?? '')
+  const [qty, setQty] = useState(numStr(initial?.qty))
+  const [value, setValue] = useState(numStr(initial?.value))
+  const [costBasis, setCostBasis] = useState(numStr(initial?.costBasis))
+  const [account, setAccount] = useState(initial?.account ?? '')
+  const [rate, setRate] = useState(initial?.rate != null ? String(+(initial.rate * 100).toFixed(4)) : '')
+  const [currency, setCurrency] = useState<'ILS' | 'USD'>(initial?.currency === 'USD' ? 'USD' : 'ILS')
+  const [monthlyContrib, setMonthlyContrib] = useState(numStr(initial?.monthlyContribution))
+  const [employerContrib, setEmployerContrib] = useState(numStr(initial?.employerContribution))
+  const [employeeContrib, setEmployeeContrib] = useState(numStr(initial?.employeeContribution))
+  const [providerName, setProviderName] = useState(initial?.providerName ?? '')
+  const [expectedPension, setExpectedPension] = useState(numStr(initial?.expectedMonthlyPension))
+  const [track, setTrack] = useState<'equity' | 'bonds' | 'mixed' | 'money_market'>(initial?.track ?? 'equity')
+
+  // Lock the page behind the modal so the bottom-sheet doesn't scroll-bleed on touch.
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   const isTraded = TRADED_TYPES.includes(type)
   const isPension = PENSION_TYPES.includes(type)
@@ -69,8 +79,11 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const holding: Holding = {
-      id: `h${Date.now()}`,
+      id: initial?.id ?? `h${Date.now()}`,
       type,
+      // Preserve fields the form doesn't model (e.g. manualAppraisal from CSV import)
+      // so editing a holding doesn't silently drop them.
+      ...(initial?.manualAppraisal ? { manualAppraisal: initial.manualAppraisal } : {}),
       ...(isTraded
         ? { symbol: symbol.toUpperCase(), qty: parseFloat(qty) || 0, currency }
         : { label: label || type, value: parseFloat(value) || 0 }
@@ -147,7 +160,7 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* Header */}
           <div className="flex items-center justify-between p-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
-            <h2 className="text-lg font-bold">הוספת נכס</h2>
+            <h2 className="text-lg font-bold">{initial ? 'עריכת נכס' : 'הוספת נכס'}</h2>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface2)]">
               <X size={18} style={{ color: 'var(--muted)' }} />
             </button>
@@ -179,7 +192,7 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
                     </div>
                   </div>
                 </div>
-                <Field label="עלות בסיס (אופציונלי)" value={costBasis} onChange={setCostBasis} placeholder="שווי קנייה" type="number" />
+                <Field label="מחיר קנייה ליחידה (אופציונלי)" value={costBasis} onChange={setCostBasis} placeholder="מחיר ממוצע ליחידה" type="number" />
               </>
             ) : (
               <div className="grid grid-cols-1 gap-3">
@@ -239,7 +252,7 @@ export default function AddAssetModal({ onClose, onAdd }: Props) {
               className="w-full py-3 rounded-xl font-bold text-sm transition-all"
               style={{ background: 'var(--primary)', color: '#0A0A0F' }}
             >
-              הוסף נכס
+              {initial ? 'שמור שינויים' : 'הוסף נכס'}
             </button>
           </form>
         </div>
