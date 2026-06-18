@@ -204,7 +204,10 @@ export function computeMillionairePath(
       points.push({ year: m / 12, value: Math.round(balance) })
       if (balance >= targetAmount * 1.5 && m > 0) break
     }
-    balance = balance * (1 + monthly) + monthlySavings
+    // Investment returns only apply to the invested (positive) balance — a
+    // negative net worth is debt, which shouldn't compound at the market rate.
+    // Monthly savings still pay it down each month.
+    balance = balance + Math.max(balance, 0) * monthly + monthlySavings
   }
   return points
 }
