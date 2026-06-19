@@ -1,18 +1,31 @@
-export type Currency = 'ILS' | 'USD' | 'EUR' | 'GBP' | 'CHF' | 'BTC' | 'ETH' | 'SOL' | 'USDT'
+// Known currencies get autocomplete; (string & {}) keeps the type open to any code.
+export type Currency = 'ILS' | 'USD' | 'EUR' | 'GBP' | 'CHF' | 'BTC' | 'ETH' | 'USDT' | (string & {})
 export type Frequency = 'monthly' | 'quarterly' | 'annual' | 'one_time'
 
-// Denominations a cash/manual holding can be held in (converted live to ₪).
-export const FIAT_CURRENCIES: Currency[] = ['ILS', 'USD', 'EUR', 'GBP', 'CHF']
-export const CRYPTO_CURRENCIES: Currency[] = ['BTC', 'ETH', 'SOL', 'USDT']
+// Fiat currencies offered for cash holdings. The prices API returns a __CUR_ILS
+// rate for every currency it can, so this list can grow freely.
+export const FIAT_CURRENCIES: string[] = [
+  'ILS', 'USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'CNY', 'HKD', 'NZD',
+  'SGD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'RON', 'BGN', 'TRY', 'RUB',
+  'UAH', 'INR', 'IDR', 'MYR', 'PHP', 'THB', 'VND', 'KRW', 'TWD', 'BRL', 'MXN',
+  'ARS', 'CLP', 'COP', 'ZAR', 'EGP', 'NGN', 'MAD', 'AED', 'SAR', 'QAR', 'KWD',
+  'BHD', 'JOD',
+]
+export const CRYPTO_CURRENCIES: string[] = [
+  'BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'AVAX',
+  'DOT', 'LINK', 'LTC', 'TRX', 'SHIB',
+]
 export const CURRENCY_LABELS: Record<string, string> = {
-  ILS: '₪ שקל', USD: '$ דולר', EUR: '€ יורו', GBP: '£ ליש"ט', CHF: 'CHF פרנק שוויצרי',
-  BTC: '₿ ביטקוין', ETH: 'Ξ את׳ריום', SOL: 'סולנה (SOL)', USDT: '₮ טת׳ר',
+  ILS: '₪ שקל', USD: '$ דולר', EUR: '€ יורו', GBP: '£ ליש"ט', JPY: '¥ ין יפני',
+  CHF: 'CHF פרנק שוויצרי', AUD: 'דולר אוסטרלי', CAD: 'דולר קנדי', CNY: '¥ יואן',
+  BTC: '₿ ביטקוין', ETH: 'Ξ את׳ריום', USDT: '₮ טת׳ר', USDC: 'USDC',
 }
 export const CURRENCY_SYMBOLS: Record<string, string> = {
-  ILS: '₪', USD: '$', EUR: '€', GBP: '£', CHF: 'CHF', BTC: '₿', ETH: 'Ξ', SOL: 'SOL', USDT: '₮',
+  ILS: '₪', USD: '$', EUR: '€', GBP: '£', JPY: '¥', CHF: 'CHF', CNY: '¥',
+  BTC: '₿', ETH: 'Ξ', SOL: 'SOL', USDT: '₮',
 }
 export function isCryptoCurrency(c?: string): boolean {
-  return c != null && (CRYPTO_CURRENCIES as string[]).includes(c)
+  return c != null && CRYPTO_CURRENCIES.includes(c)
 }
 export type HoldingType =
   | 'stock' | 'etf' | 'israeli_fund' | 'crypto'

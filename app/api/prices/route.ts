@@ -6,13 +6,11 @@ const FINNHUB_KEY = process.env.FINNHUB_API_KEY ?? ''
 const CACHE_SECONDS = 120
 
 const CRYPTO_IDS: Record<string, string> = {
-  BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin',
-  ADA: 'cardano', XRP: 'ripple', DOGE: 'dogecoin', AVAX: 'avalanche-2',
-  USDT: 'tether',
+  BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', USDC: 'usd-coin',
+  BNB: 'binancecoin', SOL: 'solana', XRP: 'ripple', ADA: 'cardano',
+  DOGE: 'dogecoin', AVAX: 'avalanche-2', DOT: 'polkadot', LINK: 'chainlink',
+  LTC: 'litecoin', TRX: 'tron', SHIB: 'shiba-inu',
 }
-
-// Extra fiat currencies (besides USD) we convert to ₪ for multi-currency cash.
-const FX_CURRENCIES = ['EUR', 'GBP', 'CHF']
 
 export async function POST(req: NextRequest) {
   const { symbols } = await req.json() as { symbols: string[] }
@@ -79,9 +77,10 @@ export async function POST(req: NextRequest) {
     const rates = data.rates ?? {}
     const ilsPerUsd = rates['ILS'] ?? 3.7
     results['__USD_ILS'] = ilsPerUsd
-    // rates are "X per USD", so 1 CUR = (ILS per USD) / (CUR per USD) ILS.
-    for (const cur of FX_CURRENCIES) {
-      if (rates[cur]) results[`__${cur}_ILS`] = ilsPerUsd / rates[cur]
+    // rates are "X per USD", so 1 CUR = (ILS per USD) / (CUR per USD) ILS. Return
+    // a rate for every currency the API knows so any fiat denomination works.
+    for (const cur of Object.keys(rates)) {
+      if (cur !== 'ILS' && cur !== 'USD' && rates[cur]) results[`__${cur}_ILS`] = ilsPerUsd / rates[cur]
     }
   } catch {
     // keep the static fallbacks set above
