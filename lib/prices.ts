@@ -1,4 +1,4 @@
-import { PriceMap, Holding } from './types'
+import { PriceMap, Holding, isCryptoCurrency } from './types'
 
 let cache: { prices: PriceMap; ts: number } | null = null
 const CACHE_MS = 2 * 60 * 1000
@@ -7,8 +7,16 @@ export async function fetchPrices(
   holdings: Holding[],
   opts: { force?: boolean } = {},
 ): Promise<PriceMap> {
-  const symbols = [...new Set(holdings.filter(h => h.symbol).map(h => h.symbol!))]
-  if (symbols.length === 0) return {}
+  // Traded symbols + crypto denominations used by cash holdings (e.g. a cash
+  // position held in BTC needs the BTC price too).
+  const symbols = [...new Set([
+    ...holdings.filter(h => h.symbol).map(h => h.symbol!),
+    ...holdings.filter(h => isCryptoCurrency(h.currency)).map(h => h.currency!),
+  ])]
+  // Even with no priced symbols we still fetch when a holding is in a non-ILS
+  // currency, so the FX rates (returned regardless of symbols) are available.
+  const needsFx = holdings.some(h => h.currency && h.currency !== 'ILS')
+  if (symbols.length === 0 && !needsFx) return {}
 
   // Use the cache only while it's fresh AND already covers every requested
   // symbol. A newly added holding won't be in it yet, so we must fetch right

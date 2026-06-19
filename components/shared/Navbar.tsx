@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Wallet, CreditCard, BarChart3, Calculator, Settings } from 'lucide-react'
+import ThemeToggle from './ThemeToggle'
 
 const NAV = [
   { href: '/dashboard', label: 'דשבורד', icon: LayoutDashboard },
@@ -45,6 +46,9 @@ export default function Navbar() {
           })}
         </div>
 
+        <div className="px-3 pt-2">
+          <ThemeToggle />
+        </div>
         <div className="px-5 py-5 text-[11px]" style={{ color: 'var(--muted)' }}>
           הנתונים שלך נשמרים<br />מקומית בלבד בדפדפן.
         </div>
@@ -56,7 +60,10 @@ export default function Navbar() {
         style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}
       >
         <div className="text-xl font-black tracking-tight" style={{ color: 'var(--primary)' }}>כמה</div>
-        <div className="text-xs" style={{ color: 'var(--muted)' }}>ניהול הון אישי</div>
+        <div className="flex items-center gap-1">
+          <span className="text-xs" style={{ color: 'var(--muted)' }}>ניהול הון אישי</span>
+          <ThemeToggle compact />
+        </div>
       </header>
 
       {/* Mobile bottom nav */}

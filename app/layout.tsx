@@ -15,6 +15,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="he" dir="rtl">
       <head>
+        {/* Apply the saved theme before paint to avoid a flash of the wrong theme. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('kamah_theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}`,
+          }}
+        />
         {GA_ID && (
           <>
             <Script

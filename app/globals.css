@@ -1,11 +1,19 @@
 @import "tailwindcss";
 
 :root {
+  /* Dark theme (default). Light theme flips only the neutrals below; the brand
+     colors (primary/gold/danger/info/purple) stay identical across themes. */
   --bg: #0A0A12;
   --surface: #10101A;
   --surface2: #16162A;
   --border: rgba(255,255,255,0.06);
   --border-strong: rgba(255,255,255,0.11);
+  --text: #E2E4F0;
+  --muted: #5B6480;
+  --muted2: #3A3F55;
+  --chart-grid: rgba(255,255,255,0.04);
+  color-scheme: dark;
+
   --primary: #818CF8;
   --primary-dim: rgba(129,140,248,0.12);
   --gold: #F5A623;
@@ -14,12 +22,26 @@
   --danger-dim: rgba(248,113,113,0.12);
   --info: #60A5FA;
   --purple: #C084FC;
-  --text: #E2E4F0;
-  --muted: #5B6480;
-  --muted2: #3A3F55;
   --rail-w: 220px;
   --app-max: 1420px;
 }
+
+:root[data-theme="light"] {
+  --bg: #F5F6FB;
+  --surface: #FFFFFF;
+  --surface2: #EEF0F7;
+  --border: rgba(15,23,42,0.08);
+  --border-strong: rgba(15,23,42,0.16);
+  --text: #1A1C2A;
+  --muted: #5B6480;
+  --muted2: #9AA1B5;
+  --chart-grid: rgba(15,23,42,0.07);
+  color-scheme: light;
+}
+
+/* Chart grid lines follow the theme — a CSS stroke overrides recharts' inline
+   stroke attribute and (unlike the attribute) resolves the custom property. */
+.recharts-cartesian-grid line { stroke: var(--chart-grid); }
 
 * { box-sizing: border-box; }
 
