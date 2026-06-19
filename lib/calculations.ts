@@ -1,4 +1,4 @@
-import { FinancialData, Holding, Liability, PriceMap, ComputedPortfolio, TYPE_COLORS, SECTOR_MAP, LIQUID_TYPES, PENSION_TYPES } from './types'
+import { FinancialData, Holding, Liability, PriceMap, ComputedPortfolio, TYPE_COLORS, SECTOR_MAP, LIQUID_TYPES, PENSION_TYPES, isCryptoCurrency } from './types'
 import { incomeNet } from './israeliSalary'
 
 export function monthlyPayment(balance: number, annualRate: number, remainingPayments: number): number {
@@ -13,6 +13,15 @@ export function totalInterestRemaining(balance: number, annualRate: number, rema
   return pmt * remainingPayments - balance
 }
 
+// ₪ value of one unit of a denomination: ILS=1, USD via the FX rate, other fiat
+// via the server-provided __CUR_ILS rate, crypto via its USD price × USD/ILS.
+function rateToIls(cur: string | undefined, prices: PriceMap, usdRate: number): number {
+  if (!cur || cur === 'ILS') return 1
+  if (isCryptoCurrency(cur)) return (prices[cur] ?? 0) * usdRate
+  if (cur === 'USD') return usdRate
+  return prices[`__${cur}_ILS`] ?? 0
+}
+
 export function holdingValue(h: Holding, prices: PriceMap, usdRate: number): number {
   if (h.symbol && h.qty !== undefined) {
     const priceUSD = prices[h.symbol] ?? 0
@@ -20,7 +29,8 @@ export function holdingValue(h: Holding, prices: PriceMap, usdRate: number): num
     if (h.currency === 'USD' || !h.currency) return valueUSD * usdRate
     return valueUSD
   }
-  return h.value ?? 0
+  // Manual holding: `value` is the amount in its denomination (₪ / fiat / crypto).
+  return (h.value ?? 0) * rateToIls(h.currency, prices, usdRate)
 }
 
 // Effective monthly expenses: the sum of itemized fixed expenses when present,
@@ -38,11 +48,12 @@ export function computePortfolio(data: FinancialData, prices: PriceMap, usdRate:
     // costBasis is the purchase PRICE PER UNIT (in the holding's currency) for a
     // traded asset, so total cost = price/unit × qty — converted to ₪ the same way
     // liveValue is, making gainPct = (current − buy) / buy. Manual assets (no qty)
-    // treat costBasis as a total.
+    // treat costBasis as a total in the holding's denomination, converted to ₪ to
+    // match liveValue (ILS/undefined → ×1, so legacy holdings are unchanged).
     const costTotal = h.costBasis != null
       ? (h.symbol && h.qty != null
           ? h.costBasis * h.qty * (h.currency === 'USD' || !h.currency ? usdRate : 1)
-          : h.costBasis)
+          : h.costBasis * rateToIls(h.currency, prices, usdRate))
       : undefined
     const gain = costTotal !== undefined ? liveValue - costTotal : undefined
     const gainPct = costTotal && costTotal > 0 ? ((liveValue - costTotal) / costTotal) * 100 : undefined

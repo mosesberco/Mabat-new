@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Holding, HoldingType, TRADED_TYPES, PENSION_TYPES } from '@/lib/types'
+import { Holding, HoldingType, Currency, TRADED_TYPES, PENSION_TYPES, FIAT_CURRENCIES, CRYPTO_CURRENCIES, CURRENCY_LABELS, CURRENCY_SYMBOLS, isCryptoCurrency } from '@/lib/types'
 import { X } from 'lucide-react'
 
 interface Props {
@@ -58,7 +58,7 @@ export default function AddAssetModal({ onClose, onAdd, initial }: Props) {
   const [costBasis, setCostBasis] = useState(numStr(initial?.costBasis))
   const [account, setAccount] = useState(initial?.account ?? '')
   const [rate, setRate] = useState(initial?.rate != null ? String(+(initial.rate * 100).toFixed(4)) : '')
-  const [currency, setCurrency] = useState<'ILS' | 'USD'>(initial?.currency === 'USD' ? 'USD' : 'ILS')
+  const [currency, setCurrency] = useState<Currency>(initial?.currency ?? 'ILS')
   const [monthlyContrib, setMonthlyContrib] = useState(numStr(initial?.monthlyContribution))
   const [employerContrib, setEmployerContrib] = useState(numStr(initial?.employerContribution))
   const [employeeContrib, setEmployeeContrib] = useState(numStr(initial?.employeeContribution))
@@ -75,6 +75,7 @@ export default function AddAssetModal({ onClose, onAdd, initial }: Props) {
 
   const isTraded = TRADED_TYPES.includes(type)
   const isPension = PENSION_TYPES.includes(type)
+  const isCashLike = type === 'cash' || type === 'deposit' || type === 'savings'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -100,7 +101,7 @@ export default function AddAssetModal({ onClose, onAdd, initial }: Props) {
         ...(providerName ? { providerName } : {}),
         ...(expectedPension ? { expectedMonthlyPension: parseFloat(expectedPension) } : {}),
       } : {}),
-      currency: isTraded ? currency : 'ILS',
+      currency: isTraded || isCashLike ? currency : 'ILS',
     }
     onAdd(holding)
     onClose()
@@ -194,6 +195,34 @@ export default function AddAssetModal({ onClose, onAdd, initial }: Props) {
                 </div>
                 <Field label="מחיר קנייה ליחידה (אופציונלי)" value={costBasis} onChange={setCostBasis} placeholder="מחיר ממוצע ליחידה" type="number" />
               </>
+            ) : isCashLike ? (
+              <div className="grid grid-cols-1 gap-3">
+                <Field label="שם" value={label} onChange={setLabel} placeholder="מזומן, פיקדון דולרי, ארנק קריפטו..." required />
+                <div>
+                  <label className="block text-xs mb-1.5" style={{ color: 'var(--muted)' }}>מטבע / נכס</label>
+                  <select
+                    value={currency}
+                    onChange={e => setCurrency(e.target.value as Currency)}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                    style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  >
+                    <optgroup label="מטבעות">
+                      {FIAT_CURRENCIES.map(c => <option key={c} value={c}>{CURRENCY_LABELS[c]}</option>)}
+                    </optgroup>
+                    <optgroup label="קריפטו">
+                      {CRYPTO_CURRENCIES.map(c => <option key={c} value={c}>{CURRENCY_LABELS[c]}</option>)}
+                    </optgroup>
+                  </select>
+                </div>
+                <Field
+                  label={isCryptoCurrency(currency) ? `כמות (${currency})` : `סכום (${CURRENCY_SYMBOLS[currency] ?? currency})`}
+                  value={value} onChange={setValue}
+                  placeholder={isCryptoCurrency(currency) ? '0.5' : '5000'} type="number" required
+                />
+                {currency !== 'ILS' && (
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>הסכום יומר לשקלים לפי שער/מחיר חי.</p>
+                )}
+              </div>
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 <Field

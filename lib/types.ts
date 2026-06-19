@@ -1,5 +1,19 @@
-export type Currency = 'ILS' | 'USD' | 'EUR'
+export type Currency = 'ILS' | 'USD' | 'EUR' | 'GBP' | 'CHF' | 'BTC' | 'ETH' | 'SOL' | 'USDT'
 export type Frequency = 'monthly' | 'quarterly' | 'annual' | 'one_time'
+
+// Denominations a cash/manual holding can be held in (converted live to ₪).
+export const FIAT_CURRENCIES: Currency[] = ['ILS', 'USD', 'EUR', 'GBP', 'CHF']
+export const CRYPTO_CURRENCIES: Currency[] = ['BTC', 'ETH', 'SOL', 'USDT']
+export const CURRENCY_LABELS: Record<string, string> = {
+  ILS: '₪ שקל', USD: '$ דולר', EUR: '€ יורו', GBP: '£ ליש"ט', CHF: 'CHF פרנק שוויצרי',
+  BTC: '₿ ביטקוין', ETH: 'Ξ את׳ריום', SOL: 'סולנה (SOL)', USDT: '₮ טת׳ר',
+}
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  ILS: '₪', USD: '$', EUR: '€', GBP: '£', CHF: 'CHF', BTC: '₿', ETH: 'Ξ', SOL: 'SOL', USDT: '₮',
+}
+export function isCryptoCurrency(c?: string): boolean {
+  return c != null && (CRYPTO_CURRENCIES as string[]).includes(c)
+}
 export type HoldingType =
   | 'stock' | 'etf' | 'israeli_fund' | 'crypto'
   | 'cash' | 'deposit' | 'savings'

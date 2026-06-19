@@ -38,6 +38,10 @@ export default function HoldingsTable({ holdings, totalAssets, onDelete, onSelec
           {holdings.sort((a, b) => b.liveValue - a.liveValue).map(h => {
             const pct = totalAssets > 0 ? (h.liveValue / totalAssets) * 100 : 0
             const color = TYPE_COLORS[h.type] ?? '#6B7280'
+            // A traded symbol, or a non-ILS cash holding with an amount, that
+            // resolves to ₪0 means its price/FX rate hasn't loaded.
+            const rateUnavailable = h.liveValue === 0 &&
+              (!!h.symbol || (!!h.currency && h.currency !== 'ILS' && (h.value ?? 0) > 0))
             return (
               <tr
                 key={h.id}
@@ -55,6 +59,9 @@ export default function HoldingsTable({ holdings, totalAssets, onDelete, onSelec
                   </div>
                   {h.account && <div className="text-xs" style={{ color: 'var(--muted)' }}>{h.account}</div>}
                   {h.qty && <div className="text-xs num" style={{ color: 'var(--muted)' }}>{h.qty} יח'</div>}
+                  {!h.symbol && h.currency && h.currency !== 'ILS' && h.value != null && (
+                    <div className="text-xs num" style={{ color: 'var(--muted)' }}>{h.value.toLocaleString('en-US')} {h.currency}</div>
+                  )}
                   {h.monthlyContribution && <div className="text-xs num" style={{ color: 'var(--purple)' }}>+{formatILS(Math.round(h.monthlyContribution))}/חודש</div>}
                   {h.providerName && <div className="text-xs" style={{ color: 'var(--muted)' }}>{h.providerName}</div>}
                 </td>
@@ -62,7 +69,7 @@ export default function HoldingsTable({ holdings, totalAssets, onDelete, onSelec
                   <Badge label={TYPE_LABELS[h.type] ?? h.type} color="muted" />
                 </td>
                 <td className="py-3 px-3">
-                  {h.symbol && h.liveValue === 0 ? (
+                  {rateUnavailable ? (
                     pricesLoading ? (
                       <div className="text-xs animate-pulse" style={{ color: 'var(--muted)' }}>טוען מחיר…</div>
                     ) : (

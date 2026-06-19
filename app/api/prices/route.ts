@@ -8,7 +8,11 @@ const CACHE_SECONDS = 120
 const CRYPTO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin',
   ADA: 'cardano', XRP: 'ripple', DOGE: 'dogecoin', AVAX: 'avalanche-2',
+  USDT: 'tether',
 }
+
+// Extra fiat currencies (besides USD) we convert to ₪ for multi-currency cash.
+const FX_CURRENCIES = ['EUR', 'GBP', 'CHF']
 
 export async function POST(req: NextRequest) {
   const { symbols } = await req.json() as { symbols: string[] }
@@ -61,15 +65,26 @@ export async function POST(req: NextRequest) {
     stockSymbols.forEach(s => { if (MOCK[s]) results[s] = MOCK[s] })
   }
 
-  // USD/ILS exchange rate via public API
+  // FX rates → ₪. Seed static fallbacks first so a transient FX outage (or a
+  // malformed response) can't zero out non-ILS cash; live values overwrite them.
+  results['__USD_ILS'] = 3.7
+  results['__EUR_ILS'] = 4.0
+  results['__GBP_ILS'] = 4.7
+  results['__CHF_ILS'] = 4.2
   try {
     const res = await fetch('https://open.er-api.com/v6/latest/USD', {
       next: { revalidate: CACHE_SECONDS },
     })
     const data = await res.json() as { rates: Record<string, number> }
-    results['__USD_ILS'] = data.rates['ILS'] ?? 3.7
+    const rates = data.rates ?? {}
+    const ilsPerUsd = rates['ILS'] ?? 3.7
+    results['__USD_ILS'] = ilsPerUsd
+    // rates are "X per USD", so 1 CUR = (ILS per USD) / (CUR per USD) ILS.
+    for (const cur of FX_CURRENCIES) {
+      if (rates[cur]) results[`__${cur}_ILS`] = ilsPerUsd / rates[cur]
+    }
   } catch {
-    results['__USD_ILS'] = 3.7
+    // keep the static fallbacks set above
   }
 
   return NextResponse.json(results, {
