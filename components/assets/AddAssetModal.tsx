@@ -207,10 +207,10 @@ export default function AddAssetModal({ onClose, onAdd, initial }: Props) {
                     style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }}
                   >
                     <optgroup label="מטבעות">
-                      {FIAT_CURRENCIES.map(c => <option key={c} value={c}>{CURRENCY_LABELS[c]}</option>)}
+                      {FIAT_CURRENCIES.map(c => <option key={c} value={c}>{CURRENCY_LABELS[c] ?? c}</option>)}
                     </optgroup>
                     <optgroup label="קריפטו">
-                      {CRYPTO_CURRENCIES.map(c => <option key={c} value={c}>{CURRENCY_LABELS[c]}</option>)}
+                      {CRYPTO_CURRENCIES.map(c => <option key={c} value={c}>{CURRENCY_LABELS[c] ?? c}</option>)}
                     </optgroup>
                   </select>
                 </div>
