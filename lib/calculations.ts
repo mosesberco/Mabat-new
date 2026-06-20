@@ -1,4 +1,4 @@
-import { FinancialData, Holding, Liability, PriceMap, ComputedPortfolio, TYPE_COLORS, SECTOR_MAP, LIQUID_TYPES, PENSION_TYPES, isCryptoCurrency } from './types'
+import { FinancialData, Holding, PriceMap, ComputedPortfolio, TYPE_COLORS, SECTOR_MAP, LIQUID_TYPES, PENSION_TYPES, isCryptoCurrency } from './types'
 import { incomeNet, monthlyPensionContributions as salaryPensionContributions } from './israeliSalary'
 
 export function monthlyPayment(balance: number, annualRate: number, remainingPayments: number): number {
@@ -222,7 +222,10 @@ export function computeMillionairePath(
   currentNetWorth: number,
   monthlySavings: number,
   targetAmount = 1_000_000,
-  annualReturn = 0.07
+  annualReturn = 0.07,
+  // Loan payments that free up over time: once month m passes `endsInMonths`,
+  // that loan's payment is added back to the monthly savings.
+  freedPayments: { payment: number; endsInMonths: number }[] = [],
 ): { year: number; value: number }[] {
   const points: { year: number; value: number }[] = []
   let balance = currentNetWorth
@@ -236,33 +239,11 @@ export function computeMillionairePath(
     }
     // Investment returns only apply to the invested (positive) balance — a
     // negative net worth is debt, which shouldn't compound at the market rate.
-    // Monthly savings still pay it down each month.
-    balance = balance + Math.max(balance, 0) * monthly + monthlySavings
+    // As each loan is paid off its payment frees up and is added to savings, so
+    // the path accelerates over time (conservative: it credits the freed cash
+    // flow, not the equity built by principal repayment during the loan).
+    const freed = freedPayments.reduce((s, d) => s + (m >= d.endsInMonths ? d.payment : 0), 0)
+    balance = balance + Math.max(balance, 0) * monthly + monthlySavings + freed
   }
   return points
-}
-
-export function debtAvalanche(
-  liabilities: Liability[],
-  extraMonthly: number
-): { id: string; label: string; monthsToPayoff: number; interestSaved: number }[] {
-  const sorted = [...liabilities].sort((a, b) => b.annualRate - a.annualRate)
-  return sorted.map((l, i) => {
-    const extra = i === 0 ? extraMonthly : 0
-    const pmt = monthlyPayment(l.currentBalance, l.annualRate, l.remainingPayments) + extra
-    const r = l.annualRate / 12
-    let balance = l.currentBalance
-    let months = 0
-    let totalPaid = 0
-    while (balance > 0.01 && months < 1000) {
-      const interest = balance * r
-      const principal = Math.min(pmt - interest, balance)
-      totalPaid += pmt
-      balance -= principal
-      months++
-    }
-    const originalTotal = monthlyPayment(l.currentBalance, l.annualRate, l.remainingPayments) * l.remainingPayments
-    const interestSaved = originalTotal - totalPaid
-    return { id: l.id, label: l.label, monthsToPayoff: months, interestSaved }
-  })
 }

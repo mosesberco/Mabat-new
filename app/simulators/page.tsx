@@ -72,7 +72,13 @@ export default function SimulatorsPage() {
   const pensionMonthly = Math.round(monthlyPensionContributions(data.income))
   const defaultSavings = Math.max(0, Math.round(portfolio.monthlySavings)) + kerenMonthly
   const monthlySavings = savingsInput ?? defaultSavings
-  const milPath = computeMillionairePath(portfolio.netWorth, monthlySavings, milTarget, returnRate / 100)
+  // As loans are paid off their payment frees up — feed that into the projection
+  // so savings ramp up over time instead of staying flat forever.
+  const freedPayments = portfolio.liabilities
+    .filter(l => l.remainingPayments > 0)
+    .map(l => ({ payment: l.monthlyPayment, endsInMonths: l.remainingPayments }))
+  const freedTotal = Math.round(freedPayments.reduce((s, d) => s + d.payment, 0))
+  const milPath = computeMillionairePath(portfolio.netWorth, monthlySavings, milTarget, returnRate / 100, freedPayments)
   const milYears = milPath.find(p => p.value >= milTarget)?.year ?? null
 
   const lastYear = aptData[aptData.length - 1]
@@ -153,9 +159,10 @@ export default function SimulatorsPage() {
           <SliderFull label="תשואה שנתית צפויה" value={returnRate} onChange={setReturnRate} min={3} max={15} step={0.5} suffix="%" color="gold" />
         </div>
 
-        {(kerenMonthly > 0 || pensionMonthly > 0) && (
+        {(kerenMonthly > 0 || pensionMonthly > 0 || freedTotal > 0) && (
           <p className="text-xs -mt-2 mb-5" style={{ color: 'var(--muted)' }}>
             {kerenMonthly > 0 && <>כולל קה"ש {formatILS(kerenMonthly, true)}/חודש. </>}
+            {freedTotal > 0 && <>החיסכון מאיץ ככל שהלוואות נפרעות ({formatILS(freedTotal, true)}/חודש מתפנים בהדרגה). </>}
             {pensionMonthly > 0 && <>פנסיה {formatILS(pensionMonthly, true)}/חודש נצברת בנפרד (לא נזיל, לא נספר ביעד).</>}
           </p>
         )}
