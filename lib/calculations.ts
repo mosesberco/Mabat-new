@@ -1,5 +1,5 @@
 import { FinancialData, Holding, Liability, PriceMap, ComputedPortfolio, TYPE_COLORS, SECTOR_MAP, LIQUID_TYPES, PENSION_TYPES, isCryptoCurrency } from './types'
-import { incomeNet } from './israeliSalary'
+import { incomeNet, monthlyPensionContributions as salaryPensionContributions } from './israeliSalary'
 
 export function monthlyPayment(balance: number, annualRate: number, remainingPayments: number): number {
   if (remainingPayments <= 0) return 0
@@ -90,9 +90,13 @@ export function computePortfolio(data: FinancialData, prices: PriceMap, usdRate:
     .filter(h => PENSION_TYPES.includes(h.type as typeof PENSION_TYPES[number]))
     .reduce((s, h) => s + h.liveValue, 0)
 
-  const monthlyPensionContributions = holdingsComputed
+  const holdingsPensionContributions = holdingsComputed
     .filter(h => PENSION_TYPES.includes(h.type as typeof PENSION_TYPES[number]))
     .reduce((s, h) => s + (h.monthlyContribution ?? 0), 0)
+  // When a gross salary is entered, the statutory ~18.5% pension contribution is
+  // already known — use it when it exceeds the manually-entered per-fund deposits,
+  // so the pension deposit isn't shown as ₪0 just because it wasn't typed in.
+  const monthlyPensionContributions = Math.max(holdingsPensionContributions, salaryPensionContributions(data.income))
 
   const totalMonthlyExpenses = monthlyExpenses + monthlyDebtPayments
   const emergencyMonths = totalMonthlyExpenses > 0 ? liquidAssets / totalMonthlyExpenses : 0
