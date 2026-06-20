@@ -15,7 +15,10 @@ export default function PensionSummary({ portfolio, data }: Props) {
   if (pensionHoldings.length === 0) return null
 
   const totalPension = pensionHoldings.reduce((s, h) => s + h.liveValue, 0)
-  const totalMonthly = pensionHoldings.reduce((s, h) => s + (h.monthlyContribution ?? 0), 0)
+  const manualMonthly = pensionHoldings.reduce((s, h) => s + (h.monthlyContribution ?? 0), 0)
+  // Uses the salary-derived 18.5% when a gross salary is entered (see computePortfolio).
+  const totalMonthly = portfolio.monthlyPensionContributions
+  const fromSalary = totalMonthly > manualMonthly + 1
   const totalExpectedPension = pensionHoldings.reduce((s, h) => s + (h.expectedMonthlyPension ?? 0), 0)
 
   // estimated value at retirement (age 67)
@@ -47,6 +50,7 @@ export default function PensionSummary({ portfolio, data }: Props) {
         <div>
           <div className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>הפקדה חודשית</div>
           <div className="font-black text-xl num" style={{ color: 'var(--primary)' }}>{formatILS(Math.round(totalMonthly))}</div>
+          {fromSalary && <div className="text-[10px]" style={{ color: 'var(--muted)' }}>לפי הברוטו (18.5%)</div>}
         </div>
         {yearsToRetirement > 0 && (
           <div>
