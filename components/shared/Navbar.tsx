@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Wallet, CreditCard, BarChart3, Calculator, Settings } from 'lucide-react'
+import { LayoutDashboard, Wallet, CreditCard, Coins, BarChart3, Calculator, Settings } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 
 const NAV = [
   { href: '/dashboard', label: 'דשבורד', icon: LayoutDashboard },
   { href: '/assets', label: 'נכסים', icon: Wallet },
   { href: '/liabilities', label: 'חובות', icon: CreditCard },
+  { href: '/cashflow', label: 'תזרים', icon: Coins },
   { href: '/analysis', label: 'ניתוח', icon: BarChart3 },
   { href: '/simulators', label: 'סימולטורים', icon: Calculator },
   { href: '/settings', label: 'הגדרות', icon: Settings },
