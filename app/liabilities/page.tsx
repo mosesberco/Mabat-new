@@ -6,6 +6,7 @@ import { formatILS } from '@/lib/formatters'
 import { debtAvalanche } from '@/lib/calculations'
 import LoanCard from '@/components/liabilities/LoanCard'
 import AddLiabilityModal from '@/components/liabilities/AddLiabilityModal'
+import DebtTimeline from '@/components/liabilities/DebtTimeline'
 import Card from '@/components/shared/Card'
 import { Plus, Zap } from 'lucide-react'
 
@@ -54,6 +55,8 @@ export default function LiabilitiesPage() {
           <div className="col-span-2 text-center py-12 text-[var(--muted)]">אין חובות — מצוין! 🎉</div>
         )}
       </div>
+
+      {data.liabilities.length > 0 && <DebtTimeline liabilities={data.liabilities} />}
 
       {data.liabilities.length > 0 && (
         <Card>
