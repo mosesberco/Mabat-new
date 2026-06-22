@@ -12,9 +12,11 @@ interface Props {
 }
 
 const PERIODS = [
-  { key: 'month', label: 'חודש', days: 30 },
-  { key: 'half', label: 'חצי שנה', days: 182 },
-  { key: 'year', label: 'שנה', days: 365 },
+  { key: 'week', label: 'שבוע', since: 'משבוע', days: 7 },
+  { key: 'month', label: 'חודש', since: 'מחודש', days: 30 },
+  { key: 'quarter', label: '3 חודשים', since: 'מ-3 חודשים', days: 90 },
+  { key: 'half', label: 'חצי שנה', since: 'מחצי שנה', days: 182 },
+  { key: 'year', label: 'שנה', since: 'משנה', days: 365 },
 ]
 
 export default function NetWorthHero({ portfolio, snapshots, pricesLoading }: Props) {
@@ -35,7 +37,7 @@ export default function NetWorthHero({ portfolio, snapshots, pricesLoading }: Pr
   const change = baseline ? portfolio.netWorth - baseline.netWorth : 0
   const changePct = baseline && baseline.netWorth ? (change / Math.abs(baseline.netWorth)) * 100 : 0
   const positive = change >= 0
-  const periodLabel = enoughHistory ? `מ${period.label}` : 'מאז ההתחלה'
+  const periodLabel = enoughHistory ? period.since : 'מאז ההתחלה'
 
   return (
     <div className="glass p-6 md:p-8 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #10101A, #14142A)' }}>
