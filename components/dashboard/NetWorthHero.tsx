@@ -18,7 +18,12 @@ const PERIODS = [
 ]
 
 export default function NetWorthHero({ portfolio, snapshots, pricesLoading }: Props) {
-  const [period, setPeriod] = useState(PERIODS[0])
+  // A period is only meaningful once a snapshot at least that old exists.
+  const hasHistory = (days: number) => snapshots.some(s => new Date(s.date).getTime() <= Date.now() - days * 86_400_000)
+  // Default to the longest period that actually has data, so it shows the most
+  // meaningful comparison instead of clicks that appear to do nothing.
+  const longestAvailable = [...PERIODS].reverse().find(p => hasHistory(p.days)) ?? PERIODS[0]
+  const [period, setPeriod] = useState(longestAvailable)
 
   // Compare against the most recent snapshot that's at least `days` old; if there
   // isn't enough history yet, fall back to the earliest snapshot ("since you started").
@@ -60,20 +65,27 @@ export default function NetWorthHero({ portfolio, snapshots, pricesLoading }: Pr
         </div>
 
         {snapshots.length >= 2 && !pricesLoading && (
-          <div className="flex gap-1.5 mt-3">
+          <div className="flex items-center gap-1.5 mt-3 flex-wrap">
             {PERIODS.map(p => {
               const active = p.key === period.key
+              const available = hasHistory(p.days)
               return (
-                <button key={p.key} onClick={() => setPeriod(p)}
+                <button key={p.key} onClick={() => { if (available) setPeriod(p) }}
+                  title={available ? undefined : 'יתעדכן ככל שתצבור היסטוריה'}
                   className="px-2.5 py-1 rounded-full text-xs font-bold transition-all"
                   style={{
                     background: active ? 'var(--primary)' : 'rgba(255,255,255,0.07)',
                     color: active ? '#0A0A0F' : '#A8AEC4',
+                    opacity: available || active ? 1 : 0.35,
+                    cursor: available ? 'pointer' : 'default',
                   }}>
                   {p.label}
                 </button>
               )
             })}
+            {!enoughHistory && (
+              <span className="text-[11px]" style={{ color: 'var(--muted)' }}>ההשוואה תתרחב ככל שתצבור היסטוריה</span>
+            )}
           </div>
         )}
 
